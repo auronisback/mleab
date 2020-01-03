@@ -7,45 +7,41 @@ classdef MnistFactory
   %   reading it from file. Follows a static factory pattern.
   
   properties (Constant)
-    METHOD_REGRESSION = 'regression' % Labels loaded for regression
-    METHOD_CLASSIFICATION = 'classification' % Labels loaded for classification
+    FILE_TRAIN_IMAGES = './+mnist/res/train-images-idx3-ubyte';
+    FILE_TRAIN_LABELS = './+mnist/res/train-labels-idx1-ubyte';
+    FILE_TEST_IMAGES = './+mnist/res/t10k-images-idx3-ubyte';
+    FILE_TEST_LABELS = './+mnist/res/t10k-labels-idx1-ubyte';
   end
   
   methods(Static)
-    function ds = loadFromFile(patternFile, labelFile, number, method)
-      %loadFromFile Loads the MNIST dataset from given files
+    function ds = createDataset(num_train, num_test)
+      %createDataset Loads data from MNIST dataset
       %   Manages the loading of a number of the MNIST dataset patterns 
-      %   and labels from specified files.
+      %   and labels.
       %
       %   Inputs:
-      %     - patternFile: the file in which are stored MNIST patterns
-      %     - labelFile: the file in which are stored MNIST labels
-      %     - number: the number of patterns and labels that will be loaded
-      %     - method: specifies if labels have to be loaded as one single
-      %         value (for regression) or in a 1-vs-all fashion (for
-      %         classification). If not given, regression mode will be used
+      %     - num_train: number of images and labels for the training set
+      %     - num_test: number of images and labels for the test set
       %   Output:
       %     - dataset: the MNIST dataset, with the given number of patterns
       %         and labels loaded
       
-      %Checking for patterns and label file existance
-      assert(isfile(patternFile) && isfile(labelFile), ...
-        'MnistFactory:FileNotFound', 'Pattern or label file not found');
-      %Loading images and patterns
-      patterns = mnist.MnistFactory.loadMnistImages(patternFile, number);
-      labels = mnist.MnistFactory.loadMnistLabels(labelFile, number);
-      %Checking if the classification method has been given
-      if exist('method', 'var') && ...
-          strcmp(method, mnist.MnistFactory.METHOD_CLASSIFICATION)
-        labels = mnist.MnistFactory.setClassificationLabels(labels, number);
-      end
-      %Creating the dataset object
-      patternSizes = size(patterns);
-      patternSizes = patternSizes(2:end);
-      labelSizes = size(labels);
-      labelSizes = labelSizes(2:end);
-      ds = dataset.Dataset(patternSizes, labelSizes);
-      ds.setPatternsAndLabels(patterns, labels);
+      %Checking arguments
+      assert(num_train >= 1, ['Invalid number of training examples: ', ...
+        num2str(num_train)]);
+      assert(num_test >= 1, ['Invalid number of test examples: ', ...
+        num2str(num_test)]);
+      %Loading images and labels for training and test
+      train_images = mnist.MnistFactory.loadMnistImages(...
+        mnist.MnistFactory.FILE_TRAIN_IMAGES, num_train);
+      train_labels = mnist.MnistFactory.loadMnistLabels(...
+        mnist.MnistFactory.FILE_TRAIN_LABELS, num_train);
+      test_images = mnist.MnistFactory.loadMnistImages(...
+        mnist.MnistFactory.FILE_TEST_IMAGES, num_train);
+      test_labels = mnist.MnistFactory.loadMnistLabels(...
+        mnist.MnistFactory.FILE_TEST_LABELS, num_train);
+      ds = dataset.Dataset(train_images, train_labels, test_images, ...
+        test_labels, ["0", '1', '2', '3', '4', '5', '6', '7', '8', '9']);
     end
   end
     
@@ -79,8 +75,6 @@ classdef MnistFactory
       images = permute(images, [3, 2, 1]);
       %Closing file
       fclose(fp);
-      %Normalizing images
-      images = mnist.MnistFactory.normalize(images);
     end
 
     function labels = loadMnistLabels(file, number)
@@ -107,36 +101,6 @@ classdef MnistFactory
       number = min(number, total);
       %Creating labels
       labels = fread(fp, number, 'uchar');
-    end
-
-    function images = normalize(images)
-      %normalizeImages Normalizes images given, obtaining values between 0
-      %and 1.
-      %
-      %Inputs:
-      % - images: the 3-dimensional matrix containing images
-      %Output:
-      % - image: the image matrix in which each element has been normalized
-      %     due the division by 255 (max pixel value).
-  
-      images = double(images) / 255;
-    end
-    
-    function labels = setClassificationLabels(l, number)
-      %setClassificationLabels Sets the labels for classification
-      %   Transforms labels from a regression format (1 output only) to a
-      %   classification format (1 for each class).
-      %
-      %   Inputs: 
-      %     - l: the labels, in a regression fashion
-      %     - number: the number of examples
-      %   Outputs:
-      %     - labels: the labels in a 1-vs-all fashion
-      
-      labels = zeros(number, 10);
-      for n = 1 : number
-        labels(n, l(n) + 1) = 1;
-      end
     end
     
   end

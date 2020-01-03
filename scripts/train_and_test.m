@@ -3,18 +3,12 @@
 % Author: Francesco Altiero
 % Date: 26/12/2018
 
-% Training set constants and filenames
-TRAINING_NUMBER = 500; % Number of training examples
-TRAINING_PATTERNS_FNAME = 'MNIST_dataset/train-images-idx3-ubyte';
-TRAINING_LABELS_FNAME = 'MNIST_dataset/train-labels-idx1-ubyte';
-
-% Test set constants and filenames
-TEST_NUMBER = 100;
-TEST_PATTERNS_FNAME = 'MNIST_dataset/t10k-images-idx3-ubyte';
-TEST_LABELS_FNAME = 'MNIST_dataset/t10k-labels-idx1-ubyte';
+% Dataset constants and filenames
+TRAINING_NUMBER = 500;  % Number of training examples
+TEST_NUMBER = 100;  % Number of test examples
 
 % Training constants
-MAX_EPOCHS = 300;     % Epochs in training
+MAX_EPOCHS = 300; % Epochs in training
 
 % Error function for training
 TRAIN_ERROR_FUNCTION = neuralnet.train.error.CrossEntropy();
@@ -38,14 +32,8 @@ HIDDEN_LAYER_NODES = 300; % Nodes for hidden layer
 OUTPUT_LAYER_NODES = 10; % Output dimensionality
 
 %Loading datasets
-fprintf('Loading training set... ');
-trainingSet = mnist.MnistFactory.loadFromFile(TRAINING_PATTERNS_FNAME, ...
-  TRAINING_LABELS_FNAME, TRAINING_NUMBER, mnist.MnistFactory.METHOD_CLASSIFICATION);
-fprintf('Ok\n');
-
-fprintf('Loading test set... ');
-testSet = mnist.MnistFactory.loadFromFile(TEST_PATTERNS_FNAME, ...
-  TEST_LABELS_FNAME, TEST_NUMBER, mnist.MnistFactory.METHOD_REGRESSION);
+fprintf('Loading MNIST dataset... ');
+mnistDs = mnist.MnistFactory.createDataset(TRAINING_NUMBER, TEST_NUMBER);
 fprintf('Ok\n');
 
 % Training method

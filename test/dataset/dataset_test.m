@@ -6,7 +6,7 @@ try
   %Failing, empty sizes for patterns
   disp('Test 1: giving empty array for pattern sizes...');
   d = dataset.Dataset([], 1);
-  %If we stay here, the test has failed
+  %If we stay here, the test failed
   disp('FAILURE: no error has been thrown');
 catch ex
   if strcmp(ex.identifier, 'Dataset:invalidSize')

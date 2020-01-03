@@ -1,89 +1,135 @@
-%Author: Francesco Altiero
-%Date: 07/12/2018
-
 classdef Dataset < handle
-  %DATASET Defines dataset objects
-  %   This class manages datasets of training or test data used in neural
-  %   network training/validation/testing.
+  %DATASET Defines object used to store datasets
+  %   Manages operation on datasets.
   
-  properties (SetAccess = private)
-    num %Number of patterns/labels in the dataset
-    patterns %Patterns in the dataset
-    labels %Labels for each pattern in the dataset
-    patternSizes %Array with size for each dimension of pattern data
-    labelSizes %Array with size for each dimension of labels
+  properties(Access=private)
+    label_names; % Descriptive name for labels
+    train_images; % Set of training images
+    train_labels; % Set of training labels
+    test_images; % Set of test images
+    test_labels; % Set of test labels
   end
   
   methods
-    function this = Dataset(patternSizes, labelSizes)
-      %DATASET Construct an instance of this class
-      %   Creates a dataset object specifying dimensions and sizes of
-      %   patterns, along with dimension of labels.
-      %   Inputs:
-      %     - patternSizes: an array whose elements are the sizes of each
-      %         pattern dimension. The number of dimensions of patterns is
-      %         given by the length of this array
-      %     - labelSizes: an array in which each value represents the size
-      %         of the respective dimension in labels. Total dimensions of
-      %         labels is given by the array's length
-      %   Output:
-      %     - this: the Dataset object created, with empty patterns
-      
-      %Checking patternSizes and labelSizes
-      this.checkSizes(patternSizes);
-      this.checkSizes(labelSizes);
-      %Ok, initializing properties
-      this.patternSizes = patternSizes;
-      this.labelSizes = labelSizes;
+    function this = Dataset(train_images, train_labels, ...
+        test_images, test_labels, label_names)
+      %DATASET Construct the dataset
+      % Creates the dataset specifying its data.
+      % Inputs:
+      %   - train_images: the set of training images, where different
+      %       images are spread along the first dimension
+      %   - train_labels: an array of numeric labels for training set
+      %   - test_images: the set of test images, structured as the
+      %       train_images
+      %   - test_labels: an array of numeric labels for test set
+      %   - label_names: an array with labels descriptive names
+      this.train_images = train_images;
+      this.train_labels = train_labels;
+      this.test_images = test_images;
+      this.test_labels = test_labels;
+      this.label_names = label_names;
     end
-
-    function setPatternsAndLabels(this, patterns, labels)
-      %setPatternsAndLabels Adds patterns and labels to the dataset
-      %   Sets the patterns and the labels in the dataset, checking
-      %   dimensions.
-      %   
-      %   Inputs:
-      %     - patterns: patterns in the dataset
-      %     - labels: labels in the dataset
-      
-      %Asserting labels and patterns have the same cardinality
-      assert(size(patterns, 1) == size(labels, 1), 'Dataset:invalidSize', ...
-        sprintf('Patterns and labels have different cardinality: %d vs %d', ...
-          size(patterns, 1), size(labels, 1)));
-      %Ok, setting
-      this.num = size(patterns, 1);
-      this.patterns = patterns;
-      this.labels = labels;
+    
+    function num = getTrainingN(this)
+      %getTrainingN Gets the number of elements in the training set.
+      % Output:
+      %   - num: The number of elements in the training set
+      num = size(this.train_images, 1);
     end
-
+    
+    function num = getTestN(this)
+      %getTestN Gets the number of elements in the test set.
+      % Output:
+      %   - num: The number of elements in the test set
+      num = size(this.test_images(), 1);
+    end
+    
+    
+    function [images, labels] = getTrainingSet(this, from, to)
+      %getTrainingSet Gets the training set
+      %   Retrieves the training set in the dataset specifying the samples
+      %   which can be retrieved. If omitted, the whole training set is
+      %   returned.
+      % Inputs:
+      %   - from: starting index from which extract training samples
+      %   - to: ending index up to which extract training samples
+      % Outputs:
+      %   - images: the images in the training set
+      %   - labels: numeric labels for training set
+      if nargin < 3
+        to = this.getTrainingN();
+      end
+      if nargin < 2
+        from = 1;
+      end
+      dims = size(this.train_images);  % Caching actual size (if flattened)
+      images = reshape(this.train_images(from:to, :), ...
+        [to - from + 1, dims(2:end)]);
+      labels = this.train_labels(from:to);
+    end
+    
+    function [images, labels] = getTestSet(this, from, to)
+      %getTestSet Gets the test set
+      %   Retrieves the test set in the dataset, specifying
+      % Inputs:
+      %   - from: the first sample which is retrieved
+      %   - to: the last samples which is retrieved
+      % Outputs:
+      %   - images: the images in the test set
+      %   - labels: numeric labels for test set
+      if nargin < 3
+        to = this.getTestN();
+      end
+      if nargin < 2
+        from = 1;
+      end
+      dims = size(this.test_images);  % Caching actual size (if flattened)
+      images = reshape(this.test_images(from:to, :), ...
+        [to - from + 1, dims(2:end)]);
+      labels = this.test_labels(from:to);
+    end
+    
+    function label_names = getLabelNames(this)
+      %getLabelNames Retrieves the descriptive labels related to the
+      %   dataset images.
+      % Outputs:
+      %   - label_names: An array of strings containing descriptive
+      %       labels
+      label_names = this.label_names;
+    end
+    
+    function dim = getDimensions(this)
+      %getDimensions Gets the dimensions of training and test elements.
+      % Output:
+      %   - dim: an array with the sizes of elements in the dataset
+      dim = size(squeeze(this.train_images(1, :, :, :)));
+    end
+    
     function shuffle(this)
-      %shuffle Shuffles the dataset
-      %   Performs a shuffle of the dataset.
-      
-      %Creating a permutation
-      perm = randperm(this.num);
-      %Permutating patterns and labels
-      this.patterns = this.patterns(perm, :);
-      this.labels = this.labels(perm, :);
+      %shuffle Shuffles the training set
+      %   Applies a random permutation to images and labels in the
+      %   training set.
+      perm = randperm(this.getTrainingN()); %Creating a permutation
+      %Permutating training images and labels
+      this.train_images = this.train_images(perm, :, :, :);
+      this.train_labels = this.train_labels(perm, :, :, :);
     end
-  end
-  
-  methods(Access=private)
-    function checkSizes(~, sizes)
-      % checkSizes Checks for validity of pattern or label size array. A
-      %   size array is valid if its length is greater than 0 and all its
-      %   dimensions are positive integers. It will raise an exception if
-      %   any size is invalid.
-      %
-      %   Inputs:
-      %     - sizes: a size array
-      
-      %Checking length
-      assert(isvector(sizes), 'Dataset:invalidSize', ...
-          'Given size is not a 1xn or nx1 matrix');
-      %Checking each value
-      assert(all(sizes(:) > 0), 'Dataset:invalidDimensions', ...
-          'Given sizes has 1 or more non-positive values');
+    
+    function flatten(this)
+      %flatten Flattens training and test samples shape
+      %   Converts training and test samples into a linear vector.
+      this.train_images = squeeze(reshape(this.train_images, ...
+        [this.getTrainingN(), prod(this.getDimensions(), 'all')]));
+      this.test_images = squeeze(reshape(this.test_images, ...
+        [this.getTestN(), prod(this.getDimensions(), 'all')]));
+    end
+    
+    function normalize(this)
+      %normalize Normalizes the dataset
+      %   Normalizes the dataset in order to its samples have values
+      %   between zero and one.
+      this.train_images = this.train_images ./ 255;
+      this.test_images = this.test_images ./ 255;
     end
   end
 end

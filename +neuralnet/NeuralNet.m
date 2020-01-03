@@ -136,6 +136,7 @@ classdef NeuralNet < handle
       %Ok, getting the layer
       if index < this.depth
         %Requested layer is the output layer
+        layer = this.
       end
     end
     
