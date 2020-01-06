@@ -3,11 +3,12 @@ classdef Dataset < handle
   %   Manages operation on datasets.
   
   properties(Access=private)
-    label_names; % Descriptive name for labels
-    train_images; % Set of training images
-    train_labels; % Set of training labels
-    test_images; % Set of test images
-    test_labels; % Set of test labels
+    label_names;  % Descriptive name for labels
+    train_images;  % Set of training images
+    train_labels;  % Set of training labels
+    test_images;  % Set of test images
+    test_labels;  % Set of test labels
+    inputSize;  % Size of input
   end
   
   methods
@@ -28,6 +29,8 @@ classdef Dataset < handle
       this.test_images = test_images;
       this.test_labels = test_labels;
       this.label_names = label_names;
+      Xsize = size(train_images);
+      this.inputSize = squeeze(Xsize(2:end));
     end
     
     function num = getTrainingN(this)
@@ -102,7 +105,7 @@ classdef Dataset < handle
       %getDimensions Gets the dimensions of training and test elements.
       % Output:
       %   - dim: an array with the sizes of elements in the dataset
-      dim = size(squeeze(this.train_images(1, :, :, :)));
+      dim = this.inputSize;
     end
     
     function shuffle(this)
@@ -122,6 +125,8 @@ classdef Dataset < handle
         [this.getTrainingN(), prod(this.getDimensions(), 'all')]));
       this.test_images = squeeze(reshape(this.test_images, ...
         [this.getTestN(), prod(this.getDimensions(), 'all')]));
+      % Updating input size
+      this.inputSize = prod(this.inputSize, 'all');
     end
     
     function normalize(this)

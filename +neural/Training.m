@@ -10,12 +10,12 @@ classdef Training < handle
     validationSplit;  % Factor to split dataset in training and validation
     optimizer;  % Optimizer for network's parameters
     trainError;  % Error function used during training
-    testError;  % Error function used to benchmark
+    metrics;  % Cell-array of metrics used to measure performance of net
   end
   
   methods
     function this = Training(epochs, batchSize, validationSplit, ...
-      optimizer, trainError, testError)
+      optimizer, trainError, metrics)
       %TRAINING Construct a training object
       %   Creates the object, initializing its properies.
       % Inputs:
@@ -25,17 +25,13 @@ classdef Training < handle
       %     datasets in training and validation
       %   - optimizer: an optimizer instance used to update parameters
       %   - trainError: error used to train the net
-      %   - testError: error used to benchmark the net. If not given, train
-      %     error will be used
+      %   - metrics: metrics used to evaluate net's performance
       this.setEpochs(epochs);
       this.setBatchSize(batchSize);
       this.setValidationSplit(validationSplit);
       this.setOptimizer(optimizer);
       this.setTrainingError(trainError);
-      if nargin < 7
-        testError = trainError;
-      end
-      this.setTestError(testError);
+      this.setMetrics(metrics);
       this.actualEpoch = 0;  % Actual training epochs are 0
     end
     
@@ -97,19 +93,20 @@ classdef Training < handle
       this.trainError = trainError;
     end
     
-    function setTestError(this, testError)
-      %setTestError Sets the error function used to evaluate test set
-      %   Sets the test error function, which is used to evaluate network's
-      %   performances on the test set.
+    function setMetrics(this, metrics)
+      %setTestError Sets metrics used to evaluate net
+      %   Sets all metrics used to evaluate net's performances.
       % Inputs:
-      %   - testError: the benchmark error function
-      assert(isa(testError, 'neural.errors.ErrorFunction'), ...
-        'Training:invalidTestError', 'Invalid error type: %s', ...
-        class(testError));
-      this.testError = testError;
+      %   - metrics: a cell-array of metric functions
+      for i = 1:size(metrics, 2)
+        assert(isa(metrics{i}, 'neural.metrics.Metric'), ...
+          'Training:invalidMetric', 'Invalid metric (%d): %s', ...
+        i, class(metrics{i}));
+      end
+      this.metrics = metrics;
     end
     
-    function [trainErrors, validationErrors] = train(this, ...
+    function metrics = train(this, ...
         network, dataset, verbose)
       %train Trains the neural network
       %   Manages the training of a neural network with given dataset.
@@ -127,9 +124,8 @@ classdef Training < handle
       end
       % Injecting optimizer into network
       network.setOptimizer(this.optimizer);
-      % Pre-allocating error vectors for speed
-      trainErrors = zeros([1, this.epochs]);
-      validationErrors = zeros([1, this.epochs]);
+      % Initializing error and metric reports
+      metrics = this.initializeMetricsArray();
       % Splitting dataset
       [tX, tT, vX, vT] = this.splitDataset(dataset);
       % Training for given epochs
@@ -138,22 +134,34 @@ classdef Training < handle
           fprintf('epoch %d: ', e);
         end
         this.actualEpoch = e;  % Caching epoch
-        % TODO: add mini batches
-        tY = network.forward(tX);
-        trErr = this.trainError.evaluate(tY, tT);
-        network.backward(tY, tT, this.trainError);
-        vY = network.predict(vX);
-        valErr = this.trainError.evaluate(vY, vT);
-        trainErrors(e) = trErr;
-        validationErrors(e) = valErr;
+        N = size(tX, 1);
+        numBatches = floor(double(N) / double(this.batchSize));
+        for b = 1:numBatches
+          from = (b - 1) * this.batchSize + 1;
+          to = b * this.batchSize; 
+          trainBatch = reshape(tX(from:to, :), ...
+            [this.batchSize, dataset.getDimensions()]);
+          this.makeTrainingStep(network, trainBatch, tT(from:to));
+        end
+        % Checking if there are residual samples
+        lastBsize = N - this.batchSize * numBatches;
+        if lastBsize > 0
+          from = this.batchSize * numBatches + 1;
+          to = N;
+          trainBatch = reshape(tX(from:to, :), ...
+            [lastBsize, dataset.getDimensions()]);
+          this.makeTrainingStep(network, trainBatch, tT(from:to));
+        end
+        % Adding error and metrics
+        metrics = this.addEpochErrorsAndMetrics(metrics, network, e, ...
+          tX, tT, vX, vT);
         if verbose
-          fprintf('Train error: %f - Validation error: %f\n', ...
-            trErr, valErr);
+          this.printMetricsForEpoch(metrics, e);
         end
       end
     end
     
-    function testError = evaluateOnTest(this, network, dataset)
+    function metricValues = evaluateOnTest(this, network, dataset)
       %evaluateOnTest Evaluates the network on test set
       %   Performs an evaluation of the network error with respect to test
       %   set in the dataset. The error is evaluated using the test error
@@ -164,8 +172,14 @@ classdef Training < handle
       % Outputs:
       %   - testError: the error on test set
       [X, T] = dataset.getTestSet();
-      Y = network.predict(X);
-      testError = this.testError.evaluate(Y, T);
+      Y = round(network.predict(X));  % Rounding to next integer
+      metricValues = cell(size(this.metrics));
+      for i = 1:size(this.metrics, 2)
+        metricValues{i} = {...
+            this.metrics{i}.name, ...
+            this.metrics{i}.evaluate(Y, T)
+          };
+      end
     end
   end
   
@@ -177,6 +191,56 @@ classdef Training < handle
       trainN = dataset.getTrainingN() - valN;
       [trainSamples, trainLabels] = dataset.getTrainingSet(1, trainN);
       [valSamples, valLabels] = dataset.getTrainingSet(trainN + 1);
+    end
+    
+    function metrics = initializeMetricsArray(this)
+      %initializeMetricsArray Initializes metrics used to evaluate training
+      
+      % Initializing a cell for each metric, both for training and
+      % validation, and adding the error function values
+      metrics = cell(1, size(this.metrics, 2) * 2 + 2);
+      % Initializing error values metrics
+      metrics{1} = {this.trainError.name, zeros(1, this.epochs)};
+      metrics{2} = {['Val_', this.trainError.name], zeros(1, this.epochs)};
+      % Initializing all other metrics
+      for i = 1:size(this.metrics, 2)
+        metrics{i*2 + 1} = {this.metrics{i}.name, zeros(1, this.epochs)};
+        metrics{i*2 + 2} = {['Val_', this.metrics{i}.name], ...
+          zeros(1, this.epochs)};
+      end
+    end
+    
+    function makeTrainingStep(this, network, tX, tT)
+      %makeTrainStep Makes a single training step on a batch
+      tY = network.forward(tX);
+      network.backward(tY, tT, this.trainError);
+    end
+    
+    function metrs = addEpochErrorsAndMetrics(this, metrics, network, e, ...
+        tX, tT, vX, vT)
+      %evaluateErrorAndMetrics Evaluates error and metrics for the epoch
+      %   Updates error and metric values for the given epoch, adding to
+      %   the traning report.
+      
+      % Error values
+      tY = network.predict(tX);
+      vY = network.predict(vX);
+      metrics{1}{2}(e) = this.trainError.evaluate(tY, tT);  % On training
+      metrics{2}{2}(e) = this.trainError.evaluate(vY, vT);  % On validation
+      % Other metrics
+      for i = 1:size(this.metrics, 2)
+        metrics{i*2+1}{2}(e) = this.metrics{i}.evaluate(tY, tT);  % On training
+        metrics{i*2+2}{2}(e) = this.metrics{i}.evaluate(vY, vT);  % On validation
+      end
+      metrs = metrics;
+    end
+    
+    function printMetricsForEpoch(~, metrics, e)
+      %printMetrics Prints the metrics for the given epoch
+      for i = 1:size(metrics, 2)
+        fprintf("%s: %.3f ", metrics{i}{1}, metrics{i}{2}(e));
+      end
+      fprintf("\n");
     end
   end
 end

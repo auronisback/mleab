@@ -1,9 +1,19 @@
 classdef SseError < neural.errors.ErrorFunction
   %SSEERROR Sum of Squared error function
   %   Manages SSE error function, intended as:
-  %     E(Y, T) = sum((Y - T)^2) / 2
+  %     E(Y, T) = sum((T - Y)^2) / 2
+  
+  properties(Constant)
+    NAME_SSE = 'SSE';  % Name of error function
+  end
   
   methods
+    function this = SseError()
+      %SSEERROR Creates a new instance of sum of squared error function.
+      this = this@neural.errors.ErrorFunction(...
+        neural.errors.SseError.NAME_SSE);
+    end
+    
     function e = evaluate(~, Y, T)
       %evaluate Evaluates the SSE function
       %   Evaluates the SSE function on given outputs and labels.
@@ -12,9 +22,9 @@ classdef SseError < neural.errors.ErrorFunction
       %   - T: ground truth labels of samples
       % Outputs:
       %   - e: a measure of error between Y and T
-      e = Y - T;
-      e = e .* e / 2;
-      e = sum(e, 'all');
+      e = T - Y;
+      e = e .* e;
+      e = .5 * sum(e, 'all');
     end
     
     function dE = derive(~, Y, T)

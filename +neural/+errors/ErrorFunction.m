@@ -3,6 +3,20 @@ classdef ErrorFunction < handle
   %   Define base methods in order to define error functions used to train
   %   the network.
   
+  properties(SetAccess = private)
+    name;  % Name of the error function
+  end
+  
+  methods
+    function this = ErrorFunction(name)
+      %ERRORFUNCTION Creates a new instance
+      %   Creates a new error function object assigning its name.
+      % Inputs:
+      %   - name: the name of the concrete error function     
+      this.name = name;
+    end
+  end
+  
   methods(Abstract)
     
     e = evaluate(this, Y, T);

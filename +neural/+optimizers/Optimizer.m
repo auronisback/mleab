@@ -5,7 +5,7 @@ classdef Optimizer < handle
   
   methods(Abstract)
     
-    [deltaW, deltab] = calculateDeltas(this, dW, db, position);
+    [deltaW, deltab] = calculateDeltas(this, dW, db, N, position);
       %calculateDeltas Performs the delta for weights and biases of a layer
       %   Use derivatives of layer's weights and biases in order to
       %   calculate delta values which will be added to the actual layer's
@@ -13,6 +13,7 @@ classdef Optimizer < handle
       % Inputs:
       %   - dW: derivatives of error function w.r.t. weights
       %   - db: derivatives of error function w.r.t. db
+      %   - N: number of training samples in the batch
       %   - position: layer's position in the network, used for caching
       %     operations when needed
       % Outputs:

@@ -1,7 +1,9 @@
 classdef SgdOptimizer < neural.optimizers.Optimizer
   %SGDOPTIMIZER Stochastic Gradient Descent optimizer
   %   Optimize weights using Stochastic Gradient Descent algorithm,
-  %   calculating delta as -\eta * \nabla W and -\eta * \nabla b
+  %   calculating delta as -\eta * \nabla W and -\eta * \nabla b. It
+  %   generalize the batch version also, summing derivatives and dividing
+  %   by their number.
   
   properties
     learningRate;  % The learning rate
@@ -14,15 +16,16 @@ classdef SgdOptimizer < neural.optimizers.Optimizer
       this.learningRate = learningRate;
     end
     
-    function [deltaW, deltab] = calculateDeltas(this, dW, db, ~)
+    function [deltaW, deltab] = calculateDeltas(this, dW, db, N, ~)
       %calculateDeltas Calculates deltas using SGD algorithm
       %   Applies the stochastic gradient descent using the learning rate
       %   which was specified when the object was created.
       % Inputs:
       %   - dW: derivatives of the layer w.r.t. weights
       %   - db: derivatives of the layer w.r.t. biases
-      deltaW = - this.learningRate * dW;
-      deltab = - this.learningRate * db;
+      %   - N: number of training samples in the batch
+      deltaW = - this.learningRate .* dW ./ N;
+      deltab = - this.learningRate .* db ./ N;
     end
   end
 end

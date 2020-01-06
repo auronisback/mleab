@@ -38,8 +38,7 @@ classdef FcLayer < neural.layers.Layer
       end
       % Initializing weights and biases
       this.outputSize = this.numNodes;
-      this.W = randn([this.numNodes, prod(this.inputSize, 'all')]);
-      this.b = randn([1, this.numNodes]);
+      this.initializeWeightsAndBiases();
     end
     
     function [W, b] = getWeightsAndBiases(this)
@@ -108,10 +107,11 @@ classdef FcLayer < neural.layers.Layer
       dW = delta' * this.previous.Z;  % Taking output of previous layer
       db = sum(delta);  % Summing delta to have derivative of bias
       dX = delta * this.W;
+      N = size(dZ, 1);  % Caching batch size
       % Using optimizer in order to update weights
       [deltaW, deltaB] = this.network.optimizer.calculateDeltas(dW, db, ...
-        this.position);
-      this.updateWeightsAndBiases(deltaW ./ 2000, deltaB ./ 2000);
+        N, this.position);
+      this.updateWeightsAndBiases(deltaW, deltaB);
       this.previous.backward(dX);
     end
     
@@ -125,6 +125,14 @@ classdef FcLayer < neural.layers.Layer
       %   - deltaB: quantity which will be added to biases      
       this.W = this.W + deltaW;
       this.b = this.b + deltaB;
+    end
+  end
+  
+  methods(Access = private)
+    function initializeWeightsAndBiases(this)
+      %initializeWeightsAndBiases Inits layer's parameters
+      this.W = 1 - 2 * randn([this.numNodes, prod(this.inputSize, 'all')]);
+      this.b = 1 - 2 *randn([1, this.numNodes]);
     end
   end
 end
