@@ -2,110 +2,79 @@ classdef Dataset < handle
   %DATASET Defines object used to store datasets
   %   Manages operation on datasets.
   
-  properties(Access=private)
-    label_names;  % Descriptive name for labels
-    train_images;  % Set of training images
-    train_labels;  % Set of training labels
-    test_images;  % Set of test images
-    test_labels;  % Set of test labels
-    inputSize;  % Size of input
+  properties(SetAccess = private)
+    labelNames;  % Descriptive name for labels
+    trainSamples;  % Set of training images
+    trainLabels;  % Set of training labels
+    testSamples;  % Set of test images
+    testLabels;  % Set of test labels
+    inputShape;  % Size of input
+    labelShape;  % Shape of labels
+    numClasses;  % Number of classes
   end
   
   methods
-    function this = Dataset(train_images, train_labels, ...
-        test_images, test_labels, label_names)
+    function this = Dataset(trainSamples, trainLabels, ...
+        testSamples, testLabels, labelNames)
       %DATASET Construct the dataset
       % Creates the dataset specifying its data.
       % Inputs:
-      %   - train_images: the set of training images, where different
+      %   - trainSamples: the set of training samples, where different
       %       images are spread along the first dimension
-      %   - train_labels: an array of numeric labels for training set
-      %   - test_images: the set of test images, structured as the
-      %       train_images
-      %   - test_labels: an array of numeric labels for test set
-      %   - label_names: an array with labels descriptive names
-      this.train_images = train_images;
-      this.train_labels = train_labels;
-      this.test_images = test_images;
-      this.test_labels = test_labels;
-      this.label_names = label_names;
-      Xsize = size(train_images);
-      this.inputSize = squeeze(Xsize(2:end));
+      %   - trainLabels: an array of numeric labels for training set
+      %   - testSamples: the set of test samples, structured as the
+      %       trainSamples
+      %   - testLabels: an array of numeric labels for test set
+      %   - labelNames: an array with labels descriptive names
+      this.trainSamples = trainSamples;
+      this.trainLabels = trainLabels;
+      this.testSamples = testSamples;
+      this.testLabels = testLabels;
+      this.labelNames = labelNames;
+      % Sample size inferred from samples
+      Xsize = size(trainSamples);
+      this.inputShape = squeeze(Xsize(2:end));
+      % Label shape inferred from labels
+      Lsize = size(trainLabels);
+      this.labelShape = squeeze(Lsize(2:end));
+      % Number of classes inferred from label names
+      this.numClasses = size(labelNames, 2);      
     end
     
     function num = getTrainingN(this)
       %getTrainingN Gets the number of elements in the training set.
       % Output:
       %   - num: The number of elements in the training set
-      num = size(this.train_images, 1);
+      num = size(this.trainSamples, 1);
     end
     
     function num = getTestN(this)
       %getTestN Gets the number of elements in the test set.
       % Output:
       %   - num: The number of elements in the test set
-      num = size(this.test_images(), 1);
+      num = size(this.testSamples, 1);
     end
     
     
-    function [images, labels] = getTrainingSet(this, from, to)
+    function [samples, labels] = getTrainingSet(this)
       %getTrainingSet Gets the training set
-      %   Retrieves the training set in the dataset specifying the samples
-      %   which can be retrieved. If omitted, the whole training set is
-      %   returned.
-      % Inputs:
-      %   - from: starting index from which extract training samples
-      %   - to: ending index up to which extract training samples
+      %   Retrieves the training set in the dataset.
       % Outputs:
-      %   - images: the images in the training set
-      %   - labels: numeric labels for training set
-      if nargin < 3
-        to = this.getTrainingN();
-      end
-      if nargin < 2
-        from = 1;
-      end
-      dims = size(this.train_images);  % Caching actual size (if flattened)
-      images = reshape(this.train_images(from:to, :), ...
-        [to - from + 1, dims(2:end)]);
-      labels = this.train_labels(from:to);
+      %   - samples: samples in the training set
+      %   - labels: numeric or categorical labels for training set
+      
+      samples = this.trainSamples;
+      labels = this.trainLabels;
     end
     
-    function [images, labels] = getTestSet(this, from, to)
+    function [samples, labels] = getTestSet(this)
       %getTestSet Gets the test set
-      %   Retrieves the test set in the dataset, specifying
-      % Inputs:
-      %   - from: the first sample which is retrieved
-      %   - to: the last samples which is retrieved
+      %   Retrieves the test set in the dataset.
       % Outputs:
-      %   - images: the images in the test set
+      %   - samples: the images in the test set
       %   - labels: numeric labels for test set
-      if nargin < 3
-        to = this.getTestN();
-      end
-      if nargin < 2
-        from = 1;
-      end
-      dims = size(this.test_images);  % Caching actual size (if flattened)
-      images = reshape(this.test_images(from:to, :), ...
-        [to - from + 1, dims(2:end)]);
-      labels = this.test_labels(from:to);
-    end
-    
-    function label_names = getLabelNames(this)
-      %getLabelNames Retrieves the descriptive labels related to the
-      %   dataset images.
-      % Outputs:
-      %   - label_names: An array of strings containing descriptive
-      %       labels
-      label_names = this.label_names;
-    end
-    
-    function dim = getDimensions(this)
-      %getDimensions Gets the dimensions of training and test elements.
-      % Output:
-      %   - dim: an array with the sizes of elements in the dataset
-      dim = this.inputSize;
+      samples = this.testSamples;
+      labels = this.testLabels;
     end
     
     function shuffle(this)
@@ -114,27 +83,53 @@ classdef Dataset < handle
       %   training set.
       perm = randperm(this.getTrainingN()); %Creating a permutation
       %Permutating training images and labels
-      this.train_images = this.train_images(perm, :, :, :);
-      this.train_labels = this.train_labels(perm, :, :, :);
+      
+      % TODO: correct in order to not mess with data - abstract dimensions
+      this.trainSamples = this.trainSamples(perm, :, :, :);
+      this.trainLabels = this.trainLabels(perm, :, :, :);
     end
     
     function flatten(this)
       %flatten Flattens training and test samples shape
       %   Converts training and test samples into a linear vector.
-      this.train_images = squeeze(reshape(this.train_images, ...
-        [this.getTrainingN(), prod(this.getDimensions(), 'all')]));
-      this.test_images = squeeze(reshape(this.test_images, ...
-        [this.getTestN(), prod(this.getDimensions(), 'all')]));
+      this.trainSamples = squeeze(reshape(this.trainSamples, ...
+        [this.getTrainingN(), prod(this.inputShape, 'all')]));
+      this.testSamples = squeeze(reshape(this.testSamples, ...
+        [this.getTestN(), prod(this.inputShape, 'all')]));
       % Updating input size
-      this.inputSize = prod(this.inputSize, 'all');
+      this.inputShape = prod(this.inputShape, 'all');
     end
     
     function normalize(this)
       %normalize Normalizes the dataset
       %   Normalizes the dataset in order to its samples have values
       %   between zero and one.
-      this.train_images = this.train_images ./ 255;
-      this.test_images = this.test_images ./ 255;
+      this.trainSamples = this.trainSamples ./ 255;
+      this.testSamples = this.testSamples ./ 255;
+    end
+    
+    function toCategoricalLabels(this)
+      %toCategoricalLabels Transforms labels in categorical mode
+      %   Performs a transformation of labels in order to produce
+      %   categorical labels, which are labels with size equal to number of
+      %   classes in the classification problem; each label has all zeros
+      %   and a single '1' value on the index related to category it
+      %   belongs.
+      
+      % Pre-allocating labels
+      catTrainLabels = zeros(this.getTrainingN(), this.numClasses);
+      catTestLabels = zeros(this.getTestN(), this.numClasses);
+      % Setting right category
+      for n = 1:this.getTrainingN()
+        catTrainLabels(n, this.trainLabels(n) + 1) = 1;
+      end
+      for n = 1:this.getTestN()
+        catTestLabels(n, this.testLabels(n) + 1) = 1;
+      end
+      % Updating labels and label size
+      this.trainLabels = catTrainLabels;
+      this.testLabels = catTestLabels;
+      this.labelShape = this.numClasses;
     end
   end
 end
