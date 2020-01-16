@@ -53,7 +53,6 @@ classdef FcLayer < ann.layers.Layer
       this.b = b;
     end
     
-    
     function Z = predict(this, X)
       %predict Evaluates the FC-layer on input
       %   Performs a matrix multiplication, an addition and the evaluation
@@ -127,6 +126,24 @@ classdef FcLayer < ann.layers.Layer
       dW = dA.' * X;
       db = sum(dA);
       dX = dA * this.W;
+    end
+    
+    function [dW, db] = inputBackward(this, dZ, X)
+      %inputBackward Calculates layer's derivatives if it is the first
+      %layer
+      %   Evaluates parameter's derivatives when the layer is the first
+      %   layer in the net. This method is added in order to avoid the
+      %   evaluation of error function w.r.t. layer's input as the error
+      %   isn't going to be backpropagated anymore.
+      % Inputs:
+      %   - dZ: derivatives w.r.t. layer's output
+      %   - X: network's inputs
+      % Outputs:
+      %   - dW: derivatives w.r.t. weights
+      %   - db: derivatives w.r.t. biases
+      dA = this.activation.derive(dZ);
+      dW = dA.' * X;
+      db = sum(dA);
     end
     
     function updateParameters(this, deltaW, deltaB)

@@ -28,7 +28,7 @@ function plotErrors(errors, bestEpoch)
   plot(0:nEpochs, errors{4});
   plot(bestEpoch - 1, errors{4}(bestEpoch), '*r');
   grid on;
-  legend({'Training Accuracy', 'Validation Accuracy', 'Best Epoch'});
+  legend({'Training Accuracy', 'Validation Accuracy'});
   hold off;
 end
 

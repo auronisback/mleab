@@ -72,6 +72,20 @@ classdef Layer < handle
       %   - dW: derivatives w.r.t. layer's weights
       %   - db: derivatives w.r.t. layer's biases
       
+    [dW, db] = inputBackward(this, dZ, X);
+      %inputBackward Calculates layer's derivatives if it is the first
+      %layer
+      %   Evaluates parameter's derivatives when the layer is the first
+      %   layer in the net. This method is added in order to avoid the
+      %   evaluation of error function w.r.t. layer's input as the error
+      %   isn't going to be backpropagated anymore.
+      % Inputs:
+      %   - dZ: derivatives w.r.t. layer's output
+      %   - X: network's inputs
+      % Outputs:
+      %   - dW: derivatives w.r.t. weights
+      %   - db: derivatives w.r.t. biases
+      
     updateParameters(this, deltaW, deltaB);
       %updateParameters Updates layer's parameters
       %   Updates parameters of the layer using delta values calculated by

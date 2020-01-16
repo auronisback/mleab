@@ -108,6 +108,33 @@ classdef Dataset < handle
       this.testSamples = this.testSamples ./ 255;
     end
     
+    function resize(this, targetSize)
+      %resize Resizes images in the dataset
+      %   Resizes training and test samples in the current dataset.
+      % Inputs:
+      %   - targetSize: size of images, as a 2D array with target values
+      %     for rows and columns
+      N = this.getTrainingN();
+      trResized = zeros([N, targetSize]);
+      for n = 1:N
+        sample = reshape(squeeze(this.trainSamples(n, :)), this.inputShape);
+        resSample = imresize(sample, targetSize);
+        trResized(n, :) = resSample(:);
+      end
+      % Resizing test
+      N = this.getTestN();
+      testResized = zeros([N, targetSize]);
+      for n = 1:N
+        sample = reshape(squeeze(this.testSamples(n, :)), this.inputShape);
+        resSample = imresize(sample, targetSize);
+        testResized(n, :) = resSample(:);
+      end
+      % Reshaping
+      this.inputShape = targetSize;
+      this.trainSamples = reshape(trResized, [N, this.inputShape]);
+      this.testSamples = reshape(testResized, [N, this.inputShape]);
+    end
+    
     function toCategoricalLabels(this)
       %toCategoricalLabels Transforms labels in categorical mode
       %   Performs a transformation of labels in order to produce
