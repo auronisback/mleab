@@ -113,7 +113,7 @@ classdef ConvLayer < ann.layers.Layer
         for k = 1:this.filterNum
           filter = reshape(this.F(k, :), this.filterShape);
           H = this.convolve(padImg, filter, this.outputShape(1:end - 1));
-          A(n, :, :, k) = H;
+          A(n, :, :, k) = H + this.b(k);
         end
       end
       A = reshape(A, [N, this.outputShape]);
@@ -274,6 +274,10 @@ classdef ConvLayer < ann.layers.Layer
           case 'valid'
             this.padding = [0, 0];
           case 'same'
+            % Same padding allowed only for odd filters
+            assert(all(mod(this.filterShape(1:2), 2) == 1), ...
+              'ConvLayer:samePaddingEvenFilter', ...
+              '"same" padding allowed only for odd filters');
             this.padding = ceil(((this.inputShape(1:2) - 1) .* this.stride ...
               + this.filterShape(1:2) - this.inputShape(1:2))/2);
           otherwise
@@ -291,10 +295,7 @@ classdef ConvLayer < ann.layers.Layer
       %initializeoutputShape Calculate the shape of the output using layer's
       %parameters
       this.outputShape = floor((this.inputShape(1:2) - this.filterShape(1:2)...
-        + 2 * this.padding) ./ this.stride);
-      % Adjusting size for odd filter sizes
-      this.outputShape(mod(this.filterShape(1:2), 2) == 1) = ...
-        this.outputShape(mod(this.filterShape(1:2), 2) == 1) + 1;
+        + 2 * this.padding) ./ this.stride) + 1;
       assert(all(this.outputShape(1:2) > 0), 'ConvLayer:invalidShape', ...
         'Invalid output shape resulting from parameters'); 
       this.outputShape(3) = this.filterNum;
@@ -316,7 +317,8 @@ classdef ConvLayer < ann.layers.Layer
         for w = 1:this.stride(2):shape(2)
           iSlice = img(h : h + fShape(1) - 1, ...
             w : w + fShape(2) - 1, :);
-          H(h, w) = sum(filter .* iSlice, 'all');
+          % Linearizing and multiplicate vectors
+          H(h, w) = filter(:).' * iSlice(:);
         end
       end
     end
@@ -325,7 +327,7 @@ classdef ConvLayer < ann.layers.Layer
       %backwardFromActivation Backpropagates once activation derivatives
       %have been calculated.
       % Caching size
-      N = size(dA, 1);
+      N = size(X, 1);
       % Calculating derivatives for weights and biases
       dW = zeros([this.filterNum, this.filterShape]);
       db = zeros([1, this.filterNum]);
@@ -340,16 +342,17 @@ classdef ConvLayer < ann.layers.Layer
           df = reshape(dA(n, :, :, k), this.outputShape(1:2));
           % Convolving each channel
           for c = 1:this.filterShape(3)
-            H = this.convolve(padImg(:, :, c), df, this.filterShape(1:2));
             % Convolving
+            H = this.convolve(padImg(:, :, c), df, this.filterShape(1:2));
             dW(k, :, :, c) = squeeze(dW(k, :, :, c)) + H;
           end
         end
-        % Calculating biases
-        db = db + sum(dA(n, :));
       end
+      % Calculating biases
+      db = sum(dA, [1, 2, 3]);
       % Reshaping derivatives w.r.t. weights
       dW = reshape(dW, [this.filterNum, this.filterShape]);
+      dW = permute(dW, [1, 3, 2, 4]);
     end
     
     function dX = calculateInputDerivatives(this, dA, X)
@@ -371,9 +374,8 @@ classdef ConvLayer < ann.layers.Layer
               Delta_ij = zeros(size(dXi));
               h = (i - 1) * this.stride(1) + 1;
               w = (j - 1) * this.stride(2) + 1;
-              % minus 1
               Delta_ij(h:h+fH-1, w:w+fW-1, :) = ...
-                dA(i, j) .* reshape(this.F(k, :), this.filterShape);
+                dA(n, i, j) .* reshape(this.F(k, :), this.filterShape);
               dXi = dXi + Delta_ij;
             end
           end

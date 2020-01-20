@@ -162,8 +162,12 @@ classdef FcLayer < ann.layers.Layer
     function initializeWeightsAndBiases(this)
       %initializeWeightsAndBiases Initializes weights and biases of the
       %layer, in order to make them uniform random in [-1, 1]
+      
+      %DEBUG: TODO remove
       this.W = 1 - 2 * rand(this.nodeNum, this.inputShape);
       this.b = 1 - 2 * rand(1, this.nodeNum);
+%         this.W = ones(this.nodeNum, this.inputShape);
+%         this.b = zeros(1, this.nodeNum);
     end
   end
 end
