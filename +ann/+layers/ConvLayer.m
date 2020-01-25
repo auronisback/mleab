@@ -308,15 +308,17 @@ classdef ConvLayer < ann.layers.Layer
       % Inputs:
       %   - img: the image which has to be convolved
       %   - filter: filter used to convolve image
-      %   - shape: output shape, used for initializing output matrix
+      %   - shape: output shape, used to initialize output matrix
       % Output:
       %   - H: the image convolved with all filters in the layer
       H = zeros(shape);
       fShape = size(filter);
-      for h = 1:this.stride(1):shape(1)
-        for w = 1:this.stride(2):shape(2)
-          iSlice = img(h : h + fShape(1) - 1, ...
-            w : w + fShape(2) - 1, :);
+      for h = 1:shape(1)
+        for w = 1:shape(2)
+          hSlice = (h - 1) * this.stride(1) + 1;
+          wSlice = (w - 1) * this.stride(2) + 1;
+          iSlice = img(hSlice : hSlice + fShape(1) - 1, ...
+            wSlice : wSlice + fShape(2) - 1, :);
           % Linearizing and multiplicate vectors
           H(h, w) = filter(:).' * iSlice(:);
         end
