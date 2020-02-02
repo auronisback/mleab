@@ -67,7 +67,7 @@ classdef FcConvEquivLayer < ann.layers.Layer
       this.initializeOutputShape();
       % Initializing inner FC layer
       this.initializeFcLayer();
-      this.name = sprintf('Conv (%d)', this.filterNum);
+      this.name = 'Fc-Conv-Equiv';
     end
     
     function [W, b] = getParameters(this)
@@ -98,7 +98,6 @@ classdef FcConvEquivLayer < ann.layers.Layer
       this.fcLayer.setParameters(W, b);
     end
     
-    
     function Z = predict(this, X)
       %predict Evaluates the convolutional layer on given input
       %   Performs convolutions between layer's filters and given set of
@@ -113,8 +112,7 @@ classdef FcConvEquivLayer < ann.layers.Layer
       % Forwarding to FC layer
       Z = this.fcLayer.predict(lX);
       % Reshaping and permuting Z to its output size
-      Z = reshape(Z, [size(X, 1), this.outputShape]);
-      Z = permute(Z, [1, 3, 2, 4]);
+      Z = this.reconstructShape(Z);
     end
     
     function Z = forward(this, X)
@@ -129,8 +127,8 @@ classdef FcConvEquivLayer < ann.layers.Layer
       % Creating patches
       lX = this.linearizeInput(X);
       % Forwarding to FC layer
-      fcZ = this.fcLayer.forward(lX);
-      Z = this.reconstructShape(fcZ);
+      Z = this.fcLayer.forward(lX);
+      Z = this.reconstructShape(Z);
       this.Z = Z;
       % Doing same to activation
       this.A = this.reconstructShape(this.fcLayer.A);
@@ -151,16 +149,19 @@ classdef FcConvEquivLayer < ann.layers.Layer
       %   - db: derivatives w.r.t. layer's biases
       
       % Linearizing input
+      squeeze(X)
       Xl = this.linearizeInput(X);
+      Xl
       % Flattening derivatives
-      dZ = permute(dZ, [1, 3, 2, 4]);
-      dZ = dZ(:);
+      dZ = permute(dZ, [3, 2, 1, 4]);
+      dZ = reshape(dZ, [], this.filterNum);
       % Backpropagating to layer
       [dX, dW, db] = this.fcLayer.backward(dZ, Xl);
       % Reshaping weights
       dW = reshape(dW, [], this.filterShape(2), this.filterShape(1), ...
         this.filterShape(3));
-      dW = permute(dW, [1, 3, 2, 4]);
+      % Transforming db in column vector
+      db = db.';
       % Calculating deX
       dX = this.calculateInputDerivatives(dX, size(X, 1));
     end
@@ -185,7 +186,8 @@ classdef FcConvEquivLayer < ann.layers.Layer
       % Backpropagating to layer
       [dX, dW, db] = this.fcLayer.outputBackward(errorFun, Xl, T);
       % Reshaping weights
-      dW = reshape(dW, [this.filterNum, this.filterShape]);
+      dW = reshape(dW, [this.filterNum, this.filterShape(2), ...
+        this.filterShape(1), this.filterShape(3)]);
       dW = permute(dW, [1, 3, 2, 4]);
       % Calculating deX
       dX = this.calculateInputDerivatives(dX, size(X, 1));
@@ -212,7 +214,8 @@ classdef FcConvEquivLayer < ann.layers.Layer
       % Backpropagating to layer
       [dW, db] = this.fcLayer.inputBackward(dZ, Xl);
       % Reshaping weights
-      dW = reshape(dW, [this.filterNum, this.filterShape]);
+      dW = reshape(dW, [this.filterNum, this.filterShape(2), ...
+        this.filterShape(1), this.filterShape(3)]);
       dW = permute(dW, [1, 3, 2, 4]);
     end
     
@@ -228,6 +231,16 @@ classdef FcConvEquivLayer < ann.layers.Layer
       deltaW = reshape(deltaW, [this.filterNum, prod(this.filterShape)]);
       this.fcLayer.updateParameters(deltaW, deltaB);
     end
+    
+    function s = toString(this)
+      %toString Gets a string representation of this layer
+      %   Converts the layer into its string representation.
+      % Output:
+      %   - s: string representation of the convolutional layer
+      s = [this.name, sprintf('(#f: %d, shape: %dx%dx%d)', ...
+        this.filterNum, this.filterShape)];
+    end
+    
   end
   
   methods(Access = private)
@@ -357,11 +370,11 @@ classdef FcConvEquivLayer < ann.layers.Layer
       Mout = permute(Mout, [1, 3, 2, 4]);
     end
     
-    function dX = calculateInputDerivatives(this, dA, N)
+    function dX = calculateInputDerivatives(this, fcdX, N)
       %calculateInputDerivatives Calculates derivatives of input using
       %derivatives w.r.t. activations of the layer, given these values and
       %the total number of samples in the batch
-      
+
       % Caching useful values
       oH = this.outputShape(1);
       oW = this.outputShape(2);
@@ -377,8 +390,8 @@ classdef FcConvEquivLayer < ann.layers.Layer
       dX = padarray(zeros([N, this.inputShape]), [0, pH, pW, 0], 0, 'both');
       % Extracting patches in any single image
       for p = 1:ppi
-        % Extracting the very patch for all images
-        dp = dA(p:ppi:size(dA, 1), :);
+        % Extracting the right patch from all images
+        dp = fcdX(p:ppi:size(fcdX, 1), :);
         % Starting height of patch
         h = floor((p - 1) / oW) * sH + 1;
         % Starting width of patch
@@ -387,7 +400,9 @@ classdef FcConvEquivLayer < ann.layers.Layer
         rH = h:h+fH-1;
         rW = w:w+fW-1;
         % Adding patch to input's derivatives
-        dp = reshape(dp, [], fH, fW, Cin);
+%         fprintf('h: %d, w: %d, dp:\n', h, w);
+%         dp
+        dp = reshape(dp, [], fW, fH, Cin);
         dp = permute(dp, [1, 3, 2, 4]);
         dX(1:N, rH, rW, :) = dX(1:N, rH, rW, :) + dp;
       end

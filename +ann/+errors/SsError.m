@@ -30,6 +30,14 @@ classdef SsError < ann.errors.ErrorFunction
       %       outputs; it is
       dE = Y - T;
     end
+    
+    function s = toString(~)
+      %toString Gets the string representation of the object
+      %   Converts the error function into its string representation.
+      % Outputs:
+      %   - s: string representation of the Sum of Squared Error
+      s = 'Sum of Squared Error';
+    end
   end
 end
 

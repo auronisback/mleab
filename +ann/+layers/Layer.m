@@ -93,6 +93,12 @@ classdef Layer < handle
       % Inputs:
       %   - deltaW: delta values for weights
       %   - deltaB: delta values for biases
+      
+    s = toString(this);
+      %toString Converts the layer into a string representation
+      %   Converts a layer into its string representation.
+      % Output:
+      %   - s: a string with information on the layer
   end
 end
 

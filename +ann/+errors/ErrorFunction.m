@@ -26,6 +26,12 @@ classdef ErrorFunction
       %   - dE: derivative of error function with respect to outputs; it is
       %       a matrix which has one row for sample and a column for all
       %       elements of an output.
+      
+    s = toString(this);
+      %toString Gets the string representation of the object
+      %   Converts the error function into its string representation.
+      % Outputs:
+      %   - s: string representation of the error
   end
 end
 

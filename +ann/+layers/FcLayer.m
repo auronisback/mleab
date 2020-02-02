@@ -26,7 +26,7 @@ classdef FcLayer < ann.layers.Layer
       this.outputShape = nodeNumber;  % Output equals to # of nodes
       this.initializeWeightsAndBiases();
       %Initializing name
-      this.name = sprintf('FC(%dx%d)', this.inputShape, this.outputShape);
+      this.name = 'FC';
     end
     
     function [W, b] = getParameters(this)
@@ -94,7 +94,7 @@ classdef FcLayer < ann.layers.Layer
       dA = this.activation.derive(dZ);
       dW = dA.' * X;
       db = sum(dA);
-      dX = (dA * this.W);
+      dX = dA * this.W;
     end
     
     function [dX, dW, db] = outputBackward(this, errorFun, X, T)
@@ -156,18 +156,23 @@ classdef FcLayer < ann.layers.Layer
       this.W = this.W + deltaW;
       this.b = this.b + deltaB;
     end
+    
+    function s = toString(this)
+      %toString Gets a string representation of the object
+      %   Converts the layer into a string.
+      % Output:
+      %   s: the string representing this FC layer
+      s = [this.name, sprintf(' (in: %d, out: %d)', prod(this.inputShape), ...
+        this.nodeNum)];
+    end
   end
   
   methods(Access = private)
     function initializeWeightsAndBiases(this)
       %initializeWeightsAndBiases Initializes weights and biases of the
       %layer, in order to make them uniform random in [-1, 1]
-      
-      %DEBUG: TODO remove
       this.W = 1 - 2 * rand(this.nodeNum, this.inputShape);
       this.b = 1 - 2 * rand(1, this.nodeNum);
-%         this.W = ones(this.nodeNum, this.inputShape);
-%         this.b = zeros(1, this.nodeNum);
     end
   end
 end

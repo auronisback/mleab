@@ -46,6 +46,14 @@ classdef CrossEntropy < ann.errors.ErrorFunction
       %   - dE: derivatives of the cross-entropy function w.r.t. outputs
       dE = - T ./ Y;
     end
+    
+    function s = toString(~)
+      %toString Gets the string representation of the object
+      %   Converts the error function into its string representation.
+      % Outputs:
+      %   - s: string representation of the Cross-Entropy Error
+      s = 'Cross-Entropy Error';
+    end
   end
 end
 

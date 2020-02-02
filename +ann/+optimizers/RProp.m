@@ -122,6 +122,15 @@ classdef RProp < ann.optimizers.Optimizer
       this.prevDeltaW = [];
       this.prevDeltaB = [];
     end
+    
+    function s = toString(this)
+      %toString Gets the string representation of the optimizer
+      %   Converts the optimizer object into a human-readable format.
+      % Output:
+      %   - s: string representation of the optimizer
+      s = sprintf('RProp (eta_min: %.3f, eta_plus: %.3f, eta_0: %.3e)', ...
+        this.etaMinus, this.etaPlus, this.deltaZero);
+    end
   end
   
 end

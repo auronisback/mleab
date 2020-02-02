@@ -27,8 +27,8 @@ net = ann.NeuralNetwork({...
 net.print();
 
 fprintf('Training:\n');
-fprintf(' - error: Cross-Entropy\n');
-fprintf(' - optimizer: RProp (eta_min: 0.5, eta_max: 1.2, delta_0 = 0.0125)\n');
+fprintf(' - error: %s\n', errorFun.toString());
+fprintf(' - optimizer: %s\n', optimizer.toString());
 fprintf(' - bacth size: %d\n', BATCH_SIZE);
 fprintf(' - validation split factor: %.3f\n', VALIDATION_SPLIT);
 % Starts training

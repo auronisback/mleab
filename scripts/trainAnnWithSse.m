@@ -22,13 +22,12 @@ fprintf('Creating a neural network:\n');
 net = ann.NeuralNetwork({...
   ann.layers.FcLayer(ds.inputShape, 200, ann.activations.Sigmoid), ...
   ann.layers.FcLayer(200, ds.labelShape, ann.activations.Identity)
-});
-net.setErrorFunction(errorFun);
+}, errorFun);
 net.print();
 
 fprintf('Training:\n');
-fprintf(' - error: Cross-Entropy\n');
-fprintf(' - optimizer: SGD (eta: %.4f)\n', ETA);
+fprintf(' - error: %s\n', errorFun.toString());
+fprintf(' - optimizer: %s\n', optimizer.toString());
 fprintf(' - bacth size: %d\n', BATCH_SIZE);
 fprintf(' - validation split factor: %.3f\n', VALIDATION_SPLIT);
 % Starts training

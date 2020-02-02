@@ -26,6 +26,12 @@ classdef Optimizer < handle
       %   values of concrete object and to make them perform cleanup
       %   operations.
       
+    s = toString(this);
+      %toString Gets the string representation of the optimizer
+      %   Converts the optimizer object into a human-readable format.
+      % Output:
+      %   - s: string representation of the optimizer
+      
   end
 end
 

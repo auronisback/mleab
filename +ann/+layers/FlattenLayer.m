@@ -15,7 +15,7 @@ classdef FlattenLayer < ann.layers.Layer
       this.inputShape = inputShape;
       this.outputShape = prod(inputShape, 'all');
       %Initializing name
-      this.name = sprintf('Flatten');
+      this.name = 'Flatten';
     end
     
     function [W, b] = getParameters(~)
@@ -104,6 +104,15 @@ classdef FlattenLayer < ann.layers.Layer
     function updateParameters(~, ~, ~)
       %updateParameters Does nothing as this layer has no parameters
       %   Does nothing
+    end
+    
+    function s = toString(this)
+      %toString Gets a human-readable string representing the layer
+      %   Outputs the flatten layer's representation as a string.
+      % Output:
+      %   - s: string representation of the object
+      s = [this.name, '(in: ', sprintf('%dx', this.inputShape(1:end - 1)), ...
+        sprintf('%d', this.inputShape(end)), ')'];
     end
   end
 end

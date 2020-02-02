@@ -78,8 +78,9 @@ classdef NeuralNetwork < handle
     function print(this)
       %print Prints network's topology
       %   Prints names of layers on the standard output.
+      fprintf('X -> ');
       for l = 1:this.depth
-        fprintf('%s -> ', this.layers{l}.name);
+        fprintf('%s -> ', this.layers{l}.toString());
       end
       fprintf('Y\n');
     end

@@ -47,6 +47,14 @@ classdef Sgd < ann.optimizers.Optimizer
       %clear Does nothing
       %   Cleares up the object. Nothing to do with SGD.
     end
+    
+    function s = toString(this)
+      %toString Gets the string representation of the optimizer
+      %   Converts the optimizer object into a human-readable format.
+      % Output:
+      %   - s: string representation of the optimizer
+      s = sprintf('SGD (eta: %.3f)', this.eta);
+    end
   end
 end
 
