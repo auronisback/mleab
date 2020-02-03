@@ -4,9 +4,8 @@ fprintf(' - input shape = [3, 3, 2]\n');
 fprintf(' - filter shape = [2, 2, 2]\n');
 fprintf(' - stride = [1, 1]\n');
 fprintf(' - padding = [0, 0] (valid)\n');
-
-fN = 133;
-N = 153;
+fN = 10;
+N = 5;
 inputShape = [3, 3, 2];
 filterShape = [2, 2, 2];
 outputShape = [2, 2, fN];

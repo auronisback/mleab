@@ -6,7 +6,7 @@ TRAIN_NUM = 1000;
 TEST_NUM = 200;
 BATCH_SIZE = 128;
 VALIDATION_SPLIT = 0.2;
-EPOCHS = 50;
+EPOCHS = 100;
 
 errorFun = ann.errors.CrossEntropy;
 optimizer = ann.optimizers.RProp(.5, 1.2, .00125);
@@ -15,13 +15,13 @@ fprintf('Creating MNIST dataset with %d training samples and %d test samples...\
   TRAIN_NUM, TEST_NUM);
 ds = mnist.MnistFactory.createDataset(TRAIN_NUM, TEST_NUM);
 % Halving image size
-%ds.resize([14, 14]);
+ds.resize([14, 14]);
 ds.normalize();
 ds.shuffle();
 ds.toCategoricalLabels();
 
 fprintf('Creating a neural network:\n');
-convLayer = ann.layers.ConvLayer(ds.inputShape, 32, [3, 3, 1], ...
+convLayer = ann.layers.ConvLayer(ds.inputShape, 16, [3, 3, 1], ...
   ann.activations.Relu());
 flattenLayer = ann.layers.FlattenLayer(convLayer.outputShape);
 fcLayer = ann.layers.FcLayer(flattenLayer.outputShape, ds.labelShape, ...

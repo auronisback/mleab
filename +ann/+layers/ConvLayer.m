@@ -64,7 +64,11 @@ classdef ConvLayer < ann.layers.Layer
         this.initializePadding(padding);
       end
       % Initializing output size
-      this.initializeOutputShape();
+      [this.outputShape(1), this.outputShape(2), this.outputShape(3)] = ...
+        ann.layers.ConvLayer.getOutputShape(this.inputShape, ...
+        this.filterShape, this.filterNum, this.stride, this.padding);
+      assert(all(this.outputShape > 0), 'ConvLayer:invalidShapes', ...
+        'Output shape is invalid with given parameters');
       this.name = 'Conv';
     end
     
@@ -105,7 +109,7 @@ classdef ConvLayer < ann.layers.Layer
       % Padding input
       padX = padarray(X, [0, this.padding, 0], 0, 'both');
       % Convoluting tensor
-      A = this.convolve(padX, this.F, this.outputShape, this.stride);
+      A = this.convolve(padX, this.F, this.stride);
       % Applying bias
       for k = 1:this.filterNum
         A(:, :, :, k) = A(:, :, :, k) + this.b(k);
@@ -287,83 +291,62 @@ classdef ConvLayer < ann.layers.Layer
         this.padding = padding(1:2);
       end
     end
-    
-    function initializeOutputShape(this)
-      %initializeoutputShape Calculate the shape of the output using layer's
-      %parameters
-      this.outputShape = floor((this.inputShape(1:2) - this.filterShape(1:2)...
-        + 2 * this.padding) ./ this.stride) + 1;
-      assert(all(this.outputShape(1:2) > 0), 'ConvLayer:invalidShape', ...
-        'Invalid output shape resulting from parameters'); 
-      this.outputShape(3) = this.filterNum;
-    end
    
     function [dW, db] = backwardFromActivation(this, dA, X)
       %backwardFromActivation Backpropagates once activation derivatives
       %have been calculated.
       
       % Caching useful values
-      N = size(X, 1); fN = this.filterNum;
+      [N, xH, xW, ~] = size(X); fN = this.filterNum;
       sH = this.stride(1); sW = this.stride(2);
-      pH = this.padding(1); pW = this.padding(2);
       oH = this.outputShape(1); oW = this.outputShape(2);
-      fH = this.filterShape(1); fW = this.filterShape(2); C = size(X, 3);
+      fH = this.filterShape(1); fW = this.filterShape(2);
       % Padding and transforming X in order to obtain convolution input
       padX = padarray(X, [0, this.padding, 0], 0, 'both');
       padX = permute(padX, [4, 2, 3, 1]);
-      %TODO: remove commented lines
-      %fprintf('N: %d, fN: %d, C: %d\n', N, fN, C);
-      %size(padX)
-      % Transforming dA for deconvolution
-      %size(dA)
+      % Cropping the right-bottom portion to obtain right input
+      cropH = mod(xH - fH, sH); cropW = mod(xW - fW, sW);
+      padX = padX(:, 1:end-cropH, 1:end-cropW, :);
+      % Obtaining deconvolutional filter from dA
       decdA = zeros(N, (oH - 1) * sH + 1, (oW - 1) * sW + 1, fN);
       decdA(:, 1:sH:end, 1:sW:end, :) = dA;
       decdA = permute(decdA, [4, 2, 3, 1]);
-      %size(decdA)
-      dW = this.convolve(padX, decdA, [fH, fW, fN], [1, 1]);
+      % Deconvolution
+      dW = this.convolve(padX, decdA, [1, 1]);
       % Permuting dW in order to obtain its right dimension
       dW = permute(dW, [4, 2, 3, 1]);
+      % Remving 
       % Calculating biases
       db = squeeze(sum(dA, [1, 2, 3]));
-      
     end
     
     function dX = calculateInputDerivatives(this, dA, X)
-      %calculateInputDerivatives Calculates derivatives w.r.t. input
-      dX = zeros(size(X));
-      N = size(X, 1);
-      H = size(dA, 2);  % Row elements of derivative
-      W = size(dA, 3);  % Column elements of derivative
-      fH = this.filterShape(1);
-      fW = this.filterShape(2);
-      for n = 1:N
-        % Creating inputs using padding values
-        dXi = padarray(zeros(this.inputShape), this.padding, 0, 'both');
-        % Looping through derivative's shape
-        for i = 1:H
-          for j = 1:W
-            for k = 1:this.filterNum
-              % Extracting patch from filter
-              Delta_ij = zeros(size(dXi));
-              h = (i - 1) * this.stride(1) + 1;
-              w = (j - 1) * this.stride(2) + 1;
-              Delta_ij(h:h+fH-1, w:w+fW-1, :) = ...
-                dA(n, i, j) .* reshape(this.F(k, :), this.filterShape);
-              dXi = dXi + Delta_ij;
-            end
-%             fprintf('h: %d, w: %d, dXi:\n', h, w);
-%             squeeze(dXi)
-          end
-        end
-        % Unpadding
-        dXi = dXi(1 + this.padding(1):end - this.padding(1), ...
-          1 + this.padding(2):end - this.padding(2), :);
-        dX(n, :) = dXi(:);
-      end
-      reshape(dX, size(X));
+      %calculateInputDerivatives Calculates derivatives w.r.t. layer's
+      %input using deconvolution between outputs and filter's weights
+      
+      % Caching useful values
+      [N, xH, xW, ~] = size(X); fN = this.filterNum;
+      sH = this.stride(1); sW = this.stride(2);
+      pH = this.padding(1); pW = this.padding(2);
+      oH = this.outputShape(1); oW = this.outputShape(2);
+      fH = this.filterShape(1); fW = this.filterShape(2);
+      % Preparing shape of activation derivatives
+      decdA = zeros(N, (oH - 1) * sH + 1, (oW - 1) * sW + 1, fN);
+      decdA(:, 1:sH:end, 1:sW:end, :) = dA;
+      decdA = padarray(decdA, [0, fH - 1, fW - 1, 0], 0, 'both');
+      % Rotating and permutating filters to obtain deconvolution filters
+      rotF = this.F(:, end:-1:1, end:-1:1, :);
+      rotF = permute(rotF, [4, 2, 3, 1]);
+      % Deconvolution
+      dX = this.convolve(decdA, rotF, [1, 1]);
+      % Enlarging dX if needed
+      enlH = mod(xH - fH, sH); enlW = mod(xW - fW, sW);
+      dX = padarray(dX, [0, enlH, enlW, 0], 0, 'post');
+      % Unpadding dX
+      dX = dX(:, 1+pH:end-pH, 1+pW:end-pW, :);
     end
     
-    function H = convolve(~, X, F, outShape, stride)
+    function H = convolve(~, X, F, stride)
       %convolve Convolves a 4D tensor with a 4D filter on 2nd to 4th
       %dimensions
       %   Given two 4D tensor, convolves input data with given filters.
@@ -374,41 +357,59 @@ classdef ConvLayer < ann.layers.Layer
       %   In a same manner, given filters should be a 4D tensor whose first
       %   dimension represents different filters and the others are the 
       %   shape of each filter.
-      %   Result of convolution is a 4D tensor with N output samples. All 
-      %   dimensions except the first have shape equal to the output shape
-      %   given.
+      %   Result of convolution is a 4D tensor with N output samples.
       % Inputs:
       %   - X: input which has to be convolved, as a 4d-tensot
       %   - F: filters used to convolve image, as a 4d-tensor
-      %   - outShape: output shape, used to initialize output matrix and
-      %     should be consistent with convolution output's size
       %   - stride: stride for the convolution
       % Output:
       %   - H: a 4D tensor with N samles on the first dimension; each
       %     sample has shape equal to the output shape given as input
       
       % Caching input and filter sizes
-      N = size(X, 1);
-      [~, fH, fW, C] = size(F);
+      [N, xH, xW, C] = size(X);
+      [fN, fH, fW, ~] = size(F);
       sH = stride(1); sW = stride(2);
+      [oH, oW, K] = ann.layers.ConvLayer.getOutputShape([xH, xW, C], ...
+        [fH, fW, C], fN, [sH, sW], [0, 0]);
       % Pre-allocating output
-      H = zeros([N, outShape]);
+      H = zeros([N, oH, oW, K]);
       % Extracting patches across all images
-      for h = 1:outShape(1)
-        for w = 1:outShape(2)
+      for h = 1:oH
+        for w = 1:oW
           % Calculating patch ranges
           startH = (h - 1) * sH + 1;
           startW = (w - 1) * sW + 1;
           rangeH = startH:startH+fH - 1;
           rangeW = startW:startW+fW - 1;
           % Extracting patches for (h, w) in all samples
-          patches = reshape(X(:, rangeH, rangeW, :), [], fH, fW, C);
+          patches = reshape(X(:, rangeH, rangeW, :), [], fH, fW, C);      
           % Convolving patches with filters
           H(:, h, w, :) = patches(:, :) * F(:, :).';
         end
       end
     end
     
+  end
+  
+  methods(Static)
+    function [H, W, K] = getOutputShape(inputShape, ...
+        filterShape, filterNum, stride, padding)
+      %getOutputShape Gets the output shape of a convolution
+      %   Calculates the output shape of a convolution passing the shape of
+      %   input and filters, stride and padding.
+      % Inputs:
+      %   - inputShape: shape of convolution input
+      %   - filterShape: shape of convolution filters
+      %   - filterNum: number of filters
+      %   - stride: stride for the convolution
+      %   - padding: convolution padding
+      outShape = floor((inputShape(1:2) - filterShape(1:2)...
+        + 2 * padding) ./ stride) + 1; 
+      H = outShape(1);
+      W = outShape(2);
+      K = filterNum;
+    end
   end
   
 end
