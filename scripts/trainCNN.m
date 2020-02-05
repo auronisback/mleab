@@ -6,7 +6,7 @@ TRAIN_NUM = 1000;
 TEST_NUM = 200;
 BATCH_SIZE = 128;
 VALIDATION_SPLIT = 0.2;
-EPOCHS = 100;
+EPOCHS = 500;
 
 errorFun = ann.errors.CrossEntropy;
 optimizer = ann.optimizers.RProp(.5, 1.2, .00125);

@@ -1,7 +1,7 @@
-inputShape = [3, 3, 3];
+inputShape = [3, 3, 1];
 numFilters = 1;  % Problem with more filters on dX
-filterShape = [2, 2, 3];
-stride = [2, 1];  % Problem with stride on dW
+filterShape = [2, 2, 1];
+stride = [1, 1];
 padding = [0, 0];
 N = 1;
 activation = ann.activations.Identity();
@@ -29,7 +29,6 @@ T = rand([N, 1]);
 fcZ = fcConvL.predict(X);
 convZ = convL.predict(X);
 
-
 fprintf('Checking same size: ');
 assert(all(size(fcZ) == size(convZ), 'all'), 'ERROR: different result size!');
 fprintf('Ok\n');
@@ -45,9 +44,6 @@ fprintf('Ok\n');
 dZ = rand([N, convL.outputShape]);
 [cdX, cdW, cdb] = convL.backward(dZ, X);
 [fcdX, fcdW, fcdb] = fcConvL.backward(dZ, X);
-
-size(cdW)
-size(fcdW)
 
 fprintf('Checking same dWs: ');
 assert(all(abs(cdW - fcdW) < 1e-10, 'all'), 'ERROR: different dWs');

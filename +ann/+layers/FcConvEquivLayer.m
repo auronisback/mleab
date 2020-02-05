@@ -107,8 +107,12 @@ classdef FcConvEquivLayer < ann.layers.Layer
       % Output:
       %   - Z: output value for given input
       
-      % Creating patches
-      lX = this.linearizeInput(X);
+      % Creating patches used padded input
+      X = padarray(X, [0, this.padding, 0], 0, 'both');
+      lX = this.extractPatches(X, ...
+        this.outputShape(1), this.outputShape(2), ...
+        this.filterShape(1), this.filterShape(2), ...
+        this.stride(1), this.stride(2));
       % Forwarding to FC layer
       Z = this.fcLayer.predict(lX);
       % Reshaping and permuting Z to its output size
@@ -124,8 +128,12 @@ classdef FcConvEquivLayer < ann.layers.Layer
       % Outputs:
       %   - Z: output for given input
       
-      % Creating patches
-      lX = this.linearizeInput(X);
+      % Creating patches used padded input
+      X = padarray(X, [0, this.padding, 0], 0, 'both');
+      lX = this.extractPatches(X, ...
+        this.outputShape(1), this.outputShape(2), ...
+        this.filterShape(1), this.filterShape(2), ...
+        this.stride(1), this.stride(2));
       % Forwarding to FC layer
       Z = this.fcLayer.forward(lX);
       Z = this.reconstructShape(Z);
@@ -148,22 +156,24 @@ classdef FcConvEquivLayer < ann.layers.Layer
       %   - dW: derivatives w.r.t. layer's weights
       %   - db: derivatives w.r.t. layer's biases
       
-      % Linearizing input
-      squeeze(X)
-      Xl = this.linearizeInput(X);
-      Xl
-      % Flattening derivatives
-      dZ = permute(dZ, [3, 2, 1, 4]);
-      dZ = reshape(dZ, [], this.filterNum);
-      % Backpropagating to layer
-      [dX, dW, db] = this.fcLayer.backward(dZ, Xl);
+      % Creating input patches used padded input
+      X = padarray(X, [0, this.padding, 0], 0, 'both');
+      lX = this.extractPatches(X, ...
+        this.outputShape(1), this.outputShape(2), ...
+        this.filterShape(1), this.filterShape(2), ...
+        this.stride(1), this.stride(2));
+      % Creating dZ patches
+      ldZ = this.linearizeDZ(dZ);
+      % Backwarding for weights and biases derivatives only
+      [dW, db] = this.fcLayer.inputBackward(ldZ, lX);
       % Reshaping weights
-      dW = reshape(dW, [], this.filterShape(2), this.filterShape(1), ...
-        this.filterShape(3));
-      % Transforming db in column vector
+      dW = reshape(dW.', this.filterShape(2), ...
+        this.filterShape(1), this.inputShape(3), []);
+      dW = permute(dW, [4, 2, 1, 3]);
+      % Reshaping biases
       db = db.';
-      % Calculating deX
-      dX = this.calculateInputDerivatives(dX, size(X, 1));
+      % Obtaining derivatives w.r.t inputs
+      dX = this.calculateInputDerivatives(dZ);
     end
     
     function [dX, dW, db] = outputBackward(this, errorFun, X, T)
@@ -181,16 +191,7 @@ classdef FcConvEquivLayer < ann.layers.Layer
       %   - dW: derivatives w.r.t. layer's weights
       %   - db: derivatives w.r.t. layer's biases
       
-      % Linearizing input
-      Xl = this.linearizeInput(X);
-      % Backpropagating to layer
-      [dX, dW, db] = this.fcLayer.outputBackward(errorFun, Xl, T);
-      % Reshaping weights
-      dW = reshape(dW, [this.filterNum, this.filterShape(2), ...
-        this.filterShape(1), this.filterShape(3)]);
-      dW = permute(dW, [1, 3, 2, 4]);
-      % Calculating deX
-      dX = this.calculateInputDerivatives(dX, size(X, 1));
+     
     end
     
     function [dW, db] = inputBackward(this, dZ, X)
@@ -206,17 +207,7 @@ classdef FcConvEquivLayer < ann.layers.Layer
       %   - dW: derivatives w.r.t. filter's weights
       %   - db: derivatives w.r.t. biases
       
-      % Linearizing input
-      Xl = this.linearizeInput(X);
-      % Flattening derivatives
-      dZ = permute(dZ, [1, 3, 2, 4]);
-      dZ = reshape(dZ, [], this.filterNum);
-      % Backpropagating to layer
-      [dW, db] = this.fcLayer.inputBackward(dZ, Xl);
-      % Reshaping weights
-      dW = reshape(dW, [this.filterNum, this.filterShape(2), ...
-        this.filterShape(1), this.filterShape(3)]);
-      dW = permute(dW, [1, 3, 2, 4]);
+      
     end
     
     function updateParameters(this, deltaW, deltaB)
@@ -309,42 +300,45 @@ classdef FcConvEquivLayer < ann.layers.Layer
     
     function initializeFcLayer(this)
       %initializeFcLayer Initializes the inner FC layer
-      
       this.fcLayer = ann.layers.FcLayer(this.filterShape, this.filterNum, ...
         this.activation);
     end
     
-    function lX = linearizeInput(this, X)
-      %linearizeInput Converts the input image to patches matrix
-      
-      % Caching input, column and row size for linearized input
-      N = size(X, 1);
-      patchShape = prod(this.filterShape, 'all');
-      ppi = prod(this.outputShape(1:2), 'all');  % Patches per image
-      % Caching filter sizes and strides
-      fH = this.filterShape(1);
-      fW = this.filterShape(2);
-      sH = this.stride(1);
-      sW = this.stride(2);
-      % Padding each element in X
-      padX = padarray(X, [0, this.padding, 0], 0, 'both');
-      % Creating pathces
-      lX = zeros([N * ppi, patchShape]);
-      for n = 1:N
-        for h = 1:this.outputShape(1)
-          for w = 1:this.outputShape(2)
-            % Calculating row number of linearized input
-            row = (n - 1) * ppi + (h - 1) * this.outputShape(2) + w;
-            % Calculating patch range in padded input
-            rangeH = (h - 1) * sH + 1: (h - 1) * sH + fH;
-            rangeW = (w - 1) * sW + 1: (w - 1) * sW + fW;
-            % Permuting rows and columns in order to obtain true patches
-            patch = permute(padX(n, rangeH, rangeW, :), [1, 3, 2, 4]);
-            % Linearizing the patch
-            lX(row, :) = reshape(patch, [1, patchShape]);
-          end
+    function P = extractPatches(~, X, oH, oW, fH, fW, sH, sW)
+      %extractPatches Creates a 2D array from a 4D tensor in which on rows
+      %will be stored all convolution patches of input
+      % Inputs:
+      %   - X: 4D tensor, whose 2nd and 3rd dimensions give patches
+      %   - oH: output height
+      %   - oW: output width
+      %   - fH: filter height
+      %   - fW: filter width
+      %   - sH: stride on height
+      %   - sW: stride on width
+      [N, ~, ~, C] = size(X);  % Extracting channels and # of samples
+      ppi = oH * oW;  % Patches per image
+      % Initializing patches matrix
+      P = zeros(N * oH * oW, fH * fW * C);
+      % Extracting patches
+      for h = 1:oH
+        for w = 1:oW
+          % Calculating patch ranges
+          startH = (h - 1) * sH + 1;
+          startW = (w - 1) * sW + 1;
+          % Extracting the patch from all images in the batch
+          patch = X(:, startH:startH+fH-1, startW:startW+fW-1, :);
+          % Permuting patch to get correct values
+          patch = permute(patch, [1, 3, 2, 4]);
+          % Linearizing patch
+          P((h-1) * oW + w:ppi:end, :) = patch(:, :);
         end
       end
+    end
+    
+    function ldZ = linearizeDZ(~, dZ)
+      %linearizeDZ Linearizes derivatives w.r.t. outputs
+      ldZ = permute(dZ, [4, 3, 2, 1]);
+      ldZ = ldZ(:, :).';
     end
     
     function Mout = reconstructShape(this, M)
@@ -355,60 +349,26 @@ classdef FcConvEquivLayer < ann.layers.Layer
       % Outputs:
       %   - Mout: matrix M reshaped in order to have the right size
       
-      ppi = this.outputShape(1) * this.outputShape(2);  % Patches per image
-      N = size(M, 1) / ppi;
-      % Shaping for cols and rows (Matlab uses column-wise storing)
-      Mout = zeros([], this.outputShape(2), this.outputShape(1), ...
-        this.outputShape(3));
-      for n = 1:N
-        from = (n - 1) * ppi + 1;
-        to = from + ppi - 1;
-        tmpM = M(from:to, :);  % Extracting right part of matrix
-        Mout(n, :) = tmpM(:);  % Linearizing
-      end
-      % Transposing rows and columns to obtain true shape
-      Mout = permute(Mout, [1, 3, 2, 4]);
+      % Caching values
+      oH = this.outputShape(1); oW = this.outputShape(2);
+      fN = this.filterNum;
+      % Reshaping and permuting
+      Mout = reshape(M.', fN, oW, oH, []);
+      Mout = permute(Mout, [4, 3, 2, 1]);
     end
     
-    function dX = calculateInputDerivatives(this, fcdX, N)
+    function dX = calculateInputDerivatives(this, dZ)
       %calculateInputDerivatives Calculates derivatives of input using
-      %derivatives w.r.t. activations of the layer, given these values and
-      %the total number of samples in the batch
+      %derivatives w.r.t. activations of the layer
 
+      % TODO: output dA in some manner!
+      
       % Caching useful values
-      oH = this.outputShape(1);
-      oW = this.outputShape(2);
-      fH = this.filterShape(1);
-      fW = this.filterShape(2);
-      Cin = this.filterShape(3);
-      sH = this.stride(1);
-      sW = this.stride(2);
-      pH = this.padding(1);
-      pW = this.padding(2);
-      ppi = oH * oW;  % Patches per image
-      % Initializing output
-      dX = padarray(zeros([N, this.inputShape]), [0, pH, pW, 0], 0, 'both');
-      % Extracting patches in any single image
-      for p = 1:ppi
-        % Extracting the right patch from all images
-        dp = fcdX(p:ppi:size(fcdX, 1), :);
-        % Starting height of patch
-        h = floor((p - 1) / oW) * sH + 1;
-        % Starting width of patch
-        w = mod(p - 1, oW) * sW + 1;
-        % Patch ranges
-        rH = h:h+fH-1;
-        rW = w:w+fW-1;
-        % Adding patch to input's derivatives
-%         fprintf('h: %d, w: %d, dp:\n', h, w);
-%         dp
-        dp = reshape(dp, [], fW, fH, Cin);
-        dp = permute(dp, [1, 3, 2, 4]);
-        dX(1:N, rH, rW, :) = dX(1:N, rH, rW, :) + dp;
-      end
-      % Unpadding output
-      dX = dX(:, 1+pH:end-pH, 1+pW:end-pW, :);
-    end
+      
+      % Caching filters from FC-layer
+      F = this.fcLayer.W;
+      % Creating deconvolution dZ
+      decdA = zeros();
   end
   
 end

@@ -129,7 +129,7 @@ classdef ConvLayer < ann.layers.Layer
       % Padding input
       padX = padarray(X, [0, this.padding, 0], 0, 'both');
       % Convoluting tensor
-      this.A = this.convolve(padX, this.F, this.outputShape, this.stride);
+      this.A = this.convolve(padX, this.F, this.stride);
       % Applying bias
       for k = 1:this.filterNum
         this.A(k, :) = this.A(k, :) + this.b(k);
@@ -297,12 +297,12 @@ classdef ConvLayer < ann.layers.Layer
       %have been calculated.
       
       % Caching useful values
-      [N, xH, xW, ~] = size(X); fN = this.filterNum;
-      sH = this.stride(1); sW = this.stride(2);
+      sH = this.stride(1); sW = this.stride(2); fN = this.filterNum;
       oH = this.outputShape(1); oW = this.outputShape(2);
       fH = this.filterShape(1); fW = this.filterShape(2);
       % Padding and transforming X in order to obtain convolution input
       padX = padarray(X, [0, this.padding, 0], 0, 'both');
+      [N, xH, xW, ~] = size(padX);  % Caching padded input values
       padX = permute(padX, [4, 2, 3, 1]);
       % Cropping the right-bottom portion to obtain right input
       cropH = mod(xH - fH, sH); cropW = mod(xW - fW, sW);
@@ -314,8 +314,7 @@ classdef ConvLayer < ann.layers.Layer
       % Deconvolution
       dW = this.convolve(padX, decdA, [1, 1]);
       % Permuting dW in order to obtain its right dimension
-      dW = permute(dW, [4, 2, 3, 1]);
-      % Remving 
+      dW = permute(dW, [4, 2, 3, 1]);      
       % Calculating biases
       db = squeeze(sum(dA, [1, 2, 3]));
     end
