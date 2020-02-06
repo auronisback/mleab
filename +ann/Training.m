@@ -37,7 +37,7 @@ classdef Training < handle
       this.optimizer.clear();
     end
     
-    function [errors, bestEpoch] = train(this, epochs, network, dataset)
+    function [errors, bestEpoch, elapsed] = train(this, epochs, network, dataset)
       %train Trains the network
       %   Performs the training of a neural network on the given dataset
       %   and for the given number of epochs of training.
@@ -52,6 +52,9 @@ classdef Training < handle
       %     cell is an array of epochs plus one elements, which record
       %     various values starting from epoch 0 (before the training) to
       %     the last training epoch
+      %   - bestEpoch: the epoch in which best accuracy on validation set
+      %     was reached
+      %   - elapsed: an array of elapsed time per epoch
       
       % Initializing errors and accuracy
       errors = cell(1, 4);
@@ -59,6 +62,8 @@ classdef Training < handle
       errors{2} = zeros(1, epochs + 1);
       errors{3} = zeros(1, epochs + 1);
       errors{4} = zeros(1, epochs + 1);
+      % Initializing elapsed times
+      elapsed = zeros(1, epochs);
       % Splitting dataset
       [tX, tT, vX, vT] = this.splitDataset(dataset);
       % Getting error for untrained network (epoch: 0)
@@ -76,17 +81,20 @@ classdef Training < handle
       % Training for given number of epochs
       for e = 1:epochs
         fprintf('epoch %d: ', e);
+        tic;  % Starting time recording
         % Training on each batch
         for b = 1:numBatches
           [bX, bT] = this.getBatch(tX, tT, b);
           this.makeTrainingStep(network, bX, bT);
         end
+        elapsed(e) = toc;  % Getting elapsed time for the epoch
         % Evaluating error and accuracy
         [errors{1}(e + 1), errors{2}(e + 1), errors{3}(e + 1), ...
           errors{4}(e + 1)] = this.getErrorsAndAccuracy(network, tX, tT, vX, vT);
         fprintf('err: %.4f - val_err: %.4f ', errors{1}(e + 1), errors{2}(e + 1));
-        fprintf('- acc: %.2f - val_acc: %.2f\n', ...
-          errors{3}(e + 1) * 100, errors{4}(e + 1) * 100);
+        fprintf('- acc: %.2f - val_acc: %.2f - elapsed: %d:%06.3fs\n', ...
+          errors{3}(e + 1) * 100, errors{4}(e + 1) * 100, ...
+          floor(elapsed(e) / 60), rem(elapsed(e), 60));
         % Saving best weights if validation error was reduced
         if errors{4}(e + 1) > bestAccuracy
           [bestW, bestB] = network.getParameters();
@@ -98,6 +106,10 @@ classdef Training < handle
       this.optimizer.clear();
       % Resetting best parameters of the network
       network.setParameters(bestW, bestB);
+      % Printing total elapsed time
+      totalTime = sum(elapsed);
+      fprintf('Total training time: %d:%06.3fs\n', floor(totalTime / 60), ...
+        rem(totalTime, 60));
     end
     
     function [err, acc] = evaluateOnTestSet(this, network, dataset)
@@ -171,10 +183,6 @@ classdef Training < handle
       [dW, db] = network.backpropagate(X, T);
       % Getting deltas and updating network's parameters
       [deltaW, deltaB] = this.optimizer.evaluateDeltas(dW, db, size(X, 1));
-      for l = 1:network.depth
-        %fprintf('deltaW{%d}', l);
-        %deltaW{l}
-      end
       network.updateParameters(deltaW, deltaB);
     end
     

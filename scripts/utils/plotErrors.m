@@ -1,7 +1,7 @@
 %Author: Francesco Altiero
 %Date: 26/12/2018
 
-function plotErrors(errors, bestEpoch)
+function plotErrors(errors, bestEpoch, title)
   %plotErrors Plots the error structure given after net's training
   %   Manages the plotting of errors for training and validation sets given
   %   after the net has been trained.
@@ -11,6 +11,11 @@ function plotErrors(errors, bestEpoch)
   %     loss on training and validation set and accuracy on both these sets
   %   - bestEpoch: the epoch in which the training reached best accuracy
   %     value on validation set
+  %   - title: an optional string which will be a title
+  if nargin < 3
+    title = 'Error Plot';
+  end
+  figure('Name', title);
   subplot(1, 2, 1);
   % Plotting training set error
   nEpochs = size(errors{1}, 2) - 1;

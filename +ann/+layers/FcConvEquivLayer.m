@@ -136,9 +136,10 @@ classdef FcConvEquivLayer < ann.layers.Layer
         this.stride(1), this.stride(2));
       % Forwarding to FC layer
       Z = this.fcLayer.forward(lX);
+      % Reshaping and permuting Z to its output size
       Z = this.reconstructShape(Z);
-      this.Z = Z;
-      % Doing same to activation
+      this.Z = Z;  % Caching outputs
+      % Reshaping activations to its output size
       this.A = this.reconstructShape(this.fcLayer.A);
     end
     
@@ -165,7 +166,7 @@ classdef FcConvEquivLayer < ann.layers.Layer
       % Creating dZ patches
       ldZ = this.linearizeDZ(dZ);
       % Backwarding for weights and biases derivatives only
-      [dW, db] = this.fcLayer.inputBackward(ldZ, lX);
+      [dX, dW, db] = this.fcLayer.backward(ldZ, lX);
       % Reshaping weights
       dW = reshape(dW.', this.filterShape(2), ...
         this.filterShape(1), this.inputShape(3), []);
@@ -173,7 +174,7 @@ classdef FcConvEquivLayer < ann.layers.Layer
       % Reshaping biases
       db = db.';
       % Obtaining derivatives w.r.t inputs
-      dX = this.calculateInputDerivatives(dZ);
+      dX = this.calculateInputDerivatives(dX);
     end
     
     function [dX, dW, db] = outputBackward(this, errorFun, X, T)
@@ -191,7 +192,22 @@ classdef FcConvEquivLayer < ann.layers.Layer
       %   - dW: derivatives w.r.t. layer's weights
       %   - db: derivatives w.r.t. layer's biases
       
-     
+      % Creating input patches used padded input
+      X = padarray(X, [0, this.padding, 0], 0, 'both');
+      lX = this.extractPatches(X, ...
+        this.outputShape(1), this.outputShape(2), ...
+        this.filterShape(1), this.filterShape(2), ...
+        this.stride(1), this.stride(2));
+      % Backwarding for weights and biases derivatives only
+      [dX, dW, db] = this.fcLayer.outputBackward(errorFun, lX, T);
+      % Reshaping weights
+      dW = reshape(dW.', this.filterShape(2), ...
+        this.filterShape(1), this.inputShape(3), []);
+      dW = permute(dW, [4, 2, 1, 3]);
+      % Reshaping biases
+      db = db.';
+      % Obtaining derivatives w.r.t inputs
+      dX = this.calculateInputDerivatives(dX);
     end
     
     function [dW, db] = inputBackward(this, dZ, X)
@@ -207,7 +223,22 @@ classdef FcConvEquivLayer < ann.layers.Layer
       %   - dW: derivatives w.r.t. filter's weights
       %   - db: derivatives w.r.t. biases
       
-      
+      % Creating input patches used padded input
+      X = padarray(X, [0, this.padding, 0], 0, 'both');
+      lX = this.extractPatches(X, ...
+        this.outputShape(1), this.outputShape(2), ...
+        this.filterShape(1), this.filterShape(2), ...
+        this.stride(1), this.stride(2));
+      % Creating dZ patches
+      ldZ = this.linearizeDZ(dZ);
+      % Backwarding for weights and biases derivatives only
+      [dW, db] = this.fcLayer.inputBackward(ldZ, lX);
+      % Reshaping weights
+      dW = reshape(dW.', this.filterShape(2), ...
+        this.filterShape(1), this.inputShape(3), []);
+      dW = permute(dW, [4, 2, 1, 3]);
+      % Reshaping biases
+      db = db.';
     end
     
     function updateParameters(this, deltaW, deltaB)
@@ -220,7 +251,7 @@ classdef FcConvEquivLayer < ann.layers.Layer
       
       % Reshaping deltas
       deltaW = reshape(deltaW, [this.filterNum, prod(this.filterShape)]);
-      this.fcLayer.updateParameters(deltaW, deltaB);
+      this.fcLayer.updateParameters(deltaW, deltaB.');
     end
     
     function s = toString(this)
@@ -357,18 +388,45 @@ classdef FcConvEquivLayer < ann.layers.Layer
       Mout = permute(Mout, [4, 3, 2, 1]);
     end
     
-    function dX = calculateInputDerivatives(this, dZ)
+    function dX = calculateInputDerivatives(this, ldX)
       %calculateInputDerivatives Calculates derivatives of input using
       %derivatives w.r.t. activations of the layer
-
-      % TODO: output dA in some manner!
+      %   Manages calculation of input derivatives for the layer starting
+      %   with derivatives produced by the inner FC layer.
+      % Inputs:
+      %   - ldX: linearized derivatives w.r.t. input given by FC layer
+      % Output:
+      %   - dX: derivatives of the layer w.r.t. input
       
-      % Caching useful values
-      
-      % Caching filters from FC-layer
-      F = this.fcLayer.W;
-      % Creating deconvolution dZ
-      decdA = zeros();
+      % Caching values
+      oH = this.outputShape(1); oW = this.outputShape(2); 
+      fH = this.filterShape(1); fW = this.filterShape(2);
+      sH = this.stride(1); sW = this.stride(2);
+      pH = this.padding(1); pW = this.padding(2);
+      xH = this.inputShape(1); xW = this.inputShape(2);
+      C = this.inputShape(3); ppi = oH * oW;
+      % Reshaping ldX in a 4D tensor
+      ldX = reshape(ldX, [], fW, fH, C);
+      ldX = permute(ldX, [1, 3, 2, 4]);
+      % Obtaining real number of samples
+      N = size(ldX, 1);
+      N = N / ppi;
+      % Initializing dX to zero (including padding)
+      dX = zeros(N, xH + 2 * pH, xW + 2 * pW, C);
+      % Summing patches
+      for h = 1:oH
+        for w = 1:oW
+          % Calculating patch ranges
+          startH = (h - 1) * sH + 1; startW = (w - 1) * sW + 1;
+          rangeH = startH:startH+fH-1; rangeW = startW:startW+fW-1;
+          % Adding the patch to derivative values
+          dX(:, rangeH, rangeW, :) = dX(:, rangeH, rangeW, :) + ...
+            ldX((h - 1) * oW + w:ppi:end, :, :, :);
+        end
+      end
+      % Unpadding dX to recover its original shape
+      dX = dX(:, 1+pH:end-pH, 1+pW:end-pW, :);
+    end
   end
   
 end

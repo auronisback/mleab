@@ -28,7 +28,7 @@ classdef Relu < ann.activations.ActivationFunction
       %   - dZ: derivatives of error function w.r.t. layer's output
       % Output:
       %   - dA: derivatives of error function w.r.t. the layer's activation
-      %     values 
+      %     values
       dA = dZ .* (this.layer.A >= 0);
     end
   end

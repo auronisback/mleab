@@ -1,14 +1,14 @@
-inputShape = [3, 3, 1];
-numFilters = 1;  % Problem with more filters on dX
-filterShape = [2, 2, 1];
-stride = [1, 1];
-padding = [0, 0];
-N = 1;
-activation = ann.activations.Identity();
+inputShape = [14, 14];
+numFilters = 96;  % Problem with more filters on dX
+filterShape = [4, 4];
+stride = [2, 2];
+padding = [1, 1];
+N = 128;
+
 fcConvL = ann.layers.FcConvEquivLayer(inputShape, numFilters, filterShape, ...
-  activation, stride, padding);
+  ann.activations.Relu(), stride, padding);
 convL = ann.layers.ConvLayer(inputShape, numFilters, filterShape, ...
-  activation, stride, padding);
+  ann.activations.Relu(), stride, padding);
 flatten = ann.layers.FlattenLayer(fcConvL.outputShape);
 lout = ann.layers.FcLayer(fcConvL.outputShape, 1, ann.activations.Identity());
 errorFun = ann.errors.SsError();
@@ -26,14 +26,14 @@ assert(all(cb == fb, 'all'), 'ERROR: Biases are not equal!');
 X = rand([N, inputShape]);
 %X(2, :) = X(1, :);  % TODO: Remove after
 T = rand([N, 1]);
-fcZ = fcConvL.predict(X);
-convZ = convL.predict(X);
+fcZ = fcConvL.forward(X);
+convZ = convL.forward(X);
 
 fprintf('Checking same size: ');
 assert(all(size(fcZ) == size(convZ), 'all'), 'ERROR: different result size!');
 fprintf('Ok\n');
 fprintf('Checking same activations: ');
-assert(all(abs(fcConvL.A - convL.A) < 1e-10, 'all'), 'ERROR: different cached activation');
+%assert(all(abs(fcConvL.A - convL.A) < 1e-10, 'all'), 'ERROR: different cached activation');
 fprintf('Ok\n');
 fprintf('Checking same outputs: ');
 % Checking distance is lesser han a treshold

@@ -132,10 +132,10 @@ classdef ConvLayer < ann.layers.Layer
       this.A = this.convolve(padX, this.F, this.stride);
       % Applying bias
       for k = 1:this.filterNum
-        this.A(k, :) = this.A(k, :) + this.b(k);
+        this.A(:, :, :, k) = this.A(:, :, :, k) + this.b(k);
       end
       this.Z = this.activation.eval(this.A);
-      % Assigning to output
+      % Outputting Z
       Z = this.Z;
     end
     
