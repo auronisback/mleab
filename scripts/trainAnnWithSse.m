@@ -5,8 +5,8 @@ TRAIN_NUM = 5000;
 TEST_NUM = 1000;
 BATCH_SIZE = 128;
 VALIDATION_SPLIT = 0.2;
-ETA = 0.01;
-EPOCHS = 200;
+ETA = .01;
+EPOCHS = 50;
 
 fprintf('Creating MNIST dataset with %d training samples and %d test samples...\n', ...
   TRAIN_NUM, TEST_NUM);

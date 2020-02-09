@@ -31,7 +31,9 @@ function plotErrors(errors, bestEpoch, title)
   hold on;
   % Plotting validation set accuracy
   plot(0:nEpochs, errors{4});
-  plot(bestEpoch - 1, errors{4}(bestEpoch), '*r');
+  if bestEpoch > 0
+    plot(bestEpoch - 1, errors{4}(bestEpoch), '*r');
+  end
   grid on;
   legend({'Training Accuracy', 'Validation Accuracy'});
   hold off;
