@@ -123,7 +123,7 @@ classdef Training < handle
       %   - acc: accuracy on the test set
       [X, T] = dataset.getTestSet();
       Y = network.predict(X);
-      err = network.errorFun.eval(Y, T);
+      err = network.errorFun.eval(Y, T) ./ size(Y, 1);
       acc = this.evalAccuracy(Y, T);
     end
   end

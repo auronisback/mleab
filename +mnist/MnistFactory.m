@@ -41,7 +41,7 @@ classdef MnistFactory
       test_labels = mnist.MnistFactory.loadMnistLabels(...
         mnist.MnistFactory.FILE_TEST_LABELS, num_train);
       ds = dataset.Dataset(train_images, train_labels, test_images, ...
-        test_labels, ["0", '1', '2', '3', '4', '5', '6', '7', '8', '9']);
+        test_labels, ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']);
     end
   end
     
