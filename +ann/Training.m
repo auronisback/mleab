@@ -137,6 +137,7 @@ classdef Training < handle
       % Calculating number of elements in training and validation
       valN = floor(N * this.validationSplit);
       trainN = N - valN;
+      fprintf('TrainN: %d\n', trainN);
       % Creating training set
       tX = reshape(X(1:trainN, :), [trainN, dataset.inputShape]);
       tT = reshape(T(1:trainN, :), [trainN, dataset.labelShape]);

@@ -1,8 +1,8 @@
 
 %INIT VARIABLES
-TRAIN_NUM = 5000;
-TEST_NUM = 1000;
-BATCH_SIZE = 128;
+TRAIN_NUM = 2000;
+TEST_NUM = 100;
+BATCH_SIZE = 1600;
 VALIDATION_SPLIT = 0.2;
 ETA = .01;
 EPOCHS = 50;
@@ -15,7 +15,7 @@ ds.flatten();
 ds.shuffle();
 
 errorFun = ann.errors.CrossEntropy();
-optimizer = ann.optimizers.RProp(ETA, 1.2);
+optimizer = ann.optimizers.RProp(0.5, 1.2, 0.0125);
 
 % 2 hidden layers
 fprintf('Creating a neural network with 2 hidden layer:\n');
