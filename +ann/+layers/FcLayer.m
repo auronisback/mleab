@@ -157,6 +157,11 @@ classdef FcLayer < ann.layers.Layer
       this.b = this.b + deltaB;
     end
     
+    function reinitialize(this)
+      %reinitialize Re-initializes weights and biases for the layer.
+      this.initializeWeightsAndBiases();
+    end
+    
     function s = toString(this)
       %toString Gets a string representation of the object
       %   Converts the layer into a string.

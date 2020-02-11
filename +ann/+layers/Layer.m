@@ -94,6 +94,9 @@ classdef Layer < handle
       %   - deltaW: delta values for weights
       %   - deltaB: delta values for biases
       
+    reinitialize(this);
+      %reinitialize Reinitializes a leyer's parameters.
+      
     s = toString(this);
       %toString Converts the layer into a string representation
       %   Converts a layer into its string representation.

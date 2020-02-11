@@ -106,6 +106,10 @@ classdef FlattenLayer < ann.layers.Layer
       %   Does nothing
     end
     
+    function reinitialize(~)
+      %reinitialize Does nothing as this kind of layers has no parameters
+    end
+    
     function s = toString(this)
       %toString Gets a human-readable string representing the layer
       %   Outputs the flatten layer's representation as a string.

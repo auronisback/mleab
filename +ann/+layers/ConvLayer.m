@@ -222,6 +222,12 @@ classdef ConvLayer < ann.layers.Layer
       this.b = this.b + deltaB;
     end
     
+    function reinitialize(this)
+      %reinitialize Re-initializes filters' parameters
+      %   Reinitializes all parameters of this convolutional layer.
+      this.initializeFilters();
+    end
+    
     function s = toString(this)
       %toString Gets a string representation of this layer
       %   Converts the layer into its string representation.

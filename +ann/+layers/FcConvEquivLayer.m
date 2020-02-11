@@ -254,6 +254,12 @@ classdef FcConvEquivLayer < ann.layers.Layer
       this.fcLayer.updateParameters(deltaW, deltaB.');
     end
     
+    function reinitialize(this)
+      %reinitialize Re-initializes weights and biases for the layer.
+      %   Reinitializes all parameters of the hidden FC layer.
+      this.fcLayer.initializeWeightsAndBiases();
+    end
+    
     function s = toString(this)
       %toString Gets a string representation of this layer
       %   Converts the layer into its string representation.

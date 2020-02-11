@@ -22,6 +22,9 @@ classdef Training < handle
       %   - batchSize: size of a batch
       %   - validationSplit: a number in [0, 1[ used to split the dataset
       %     in training and validation
+      %   - verbose: flag indicating if the training has to be verbose or
+      %     not. Defaults as true.
+      
       assert(isa(optimizer, 'ann.optimizers.Optimizer'), ...
         'Training:invalidOptimizer', 'Invalid optimizer type: %s', ...
         class(optimizer));
@@ -37,7 +40,8 @@ classdef Training < handle
       this.optimizer.clear();
     end
     
-    function [errors, bestEpoch, elapsed] = train(this, epochs, network, dataset)
+    function [errors, bestEpoch, elapsed] = train(this, epochs, ...
+        network, dataset, verbose)
       %train Trains the network
       %   Performs the training of a neural network on the given dataset
       %   and for the given number of epochs of training.
@@ -45,6 +49,8 @@ classdef Training < handle
       %   - epochs: number of epochs of training
       %   - network: the neural network which has to be trained
       %   - dataset: the dataset on which the network should be trained
+      %   - verbose: flag to check whether print informations about the
+      %     training process
       % Output:
       %   - errors: a cell-array with 4 cells, which are error function
       %     values on training set, error function values on validation
@@ -56,6 +62,10 @@ classdef Training < handle
       %     was reached
       %   - elapsed: an array of elapsed time per epoch
       
+      % Checking verbose mode
+      if ~exist('verbose', 'var')
+        verbose = true;
+      end      
       % Initializing errors and accuracy
       errors = cell(1, 4);
       errors{1} = zeros(1, epochs + 1);
@@ -69,9 +79,12 @@ classdef Training < handle
       % Getting error for untrained network (epoch: 0)
       [errors{1}(1), errors{2}(1), errors{3}(1), errors{4}(1)] = ...
         this.getErrorsAndAccuracy(network, tX, tT, vX, vT);
-      fprintf('epoch 0: err: %.4f - val_err: %.4f ', errors{1}(1), errors{2}(1));
+      if verbose
+        fprintf('epoch 0: err: %.4f - val_err: %.4f ', ...
+          errors{1}(1), errors{2}(1));
         fprintf('- acc: %.2f - val_acc: %.2f\n', ...
           errors{3}(1) * 100, errors{4}(1) * 100);
+      end
       % Initializing best weights and epoch
       [bestW, bestB] = network.getParameters();
       bestEpoch = 0;
@@ -80,7 +93,9 @@ classdef Training < handle
       numBatches = ceil(double(size(tX, 1)) / double(this.batchSize));
       % Training for given number of epochs
       for e = 1:epochs
-        fprintf('epoch %d: ', e);
+        if verbose
+          fprintf('epoch %d: ', e);
+        end
         tic;  % Starting time recording
         % Training on each batch
         for b = 1:numBatches
@@ -91,10 +106,12 @@ classdef Training < handle
         % Evaluating error and accuracy
         [errors{1}(e + 1), errors{2}(e + 1), errors{3}(e + 1), ...
           errors{4}(e + 1)] = this.getErrorsAndAccuracy(network, tX, tT, vX, vT);
-        fprintf('err: %.4f - val_err: %.4f ', errors{1}(e + 1), errors{2}(e + 1));
-        fprintf('- acc: %.2f - val_acc: %.2f - elapsed: %d:%06.3fs\n', ...
-          errors{3}(e + 1) * 100, errors{4}(e + 1) * 100, ...
-          floor(elapsed(e) / 60), rem(elapsed(e), 60));
+        if verbose
+          fprintf('err: %.4f - val_err: %.4f ', errors{1}(e + 1), errors{2}(e + 1));
+          fprintf('- acc: %.2f - val_acc: %.2f - elapsed: %d:%06.3fs\n', ...
+            errors{3}(e + 1) * 100, errors{4}(e + 1) * 100, ...
+            floor(elapsed(e) / 60), rem(elapsed(e), 60));
+        end
         % Saving best weights if validation error was reduced
         if errors{4}(e + 1) > bestAccuracy
           [bestW, bestB] = network.getParameters();
@@ -106,10 +123,12 @@ classdef Training < handle
       this.optimizer.clear();
       % Resetting best parameters of the network
       network.setParameters(bestW, bestB);
-      % Printing total elapsed time
-      totalTime = sum(elapsed);
-      fprintf('Total training time: %d:%06.3fs\n', floor(totalTime / 60), ...
-        rem(totalTime, 60));
+      if verbose
+        % Printing total elapsed time
+        totalTime = sum(elapsed);
+        fprintf('Total training time: %d:%06.3fs\n', floor(totalTime / 60), ...
+          rem(totalTime, 60));
+      end
     end
     
     function [err, acc] = evaluateOnTestSet(this, network, dataset)
@@ -137,7 +156,6 @@ classdef Training < handle
       % Calculating number of elements in training and validation
       valN = floor(N * this.validationSplit);
       trainN = N - valN;
-      fprintf('TrainN: %d\n', trainN);
       % Creating training set
       tX = reshape(X(1:trainN, :), [trainN, dataset.inputShape]);
       tT = reshape(T(1:trainN, :), [trainN, dataset.labelShape]);

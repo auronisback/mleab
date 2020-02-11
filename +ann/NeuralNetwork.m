@@ -195,6 +195,13 @@ classdef NeuralNetwork < handle
       end
     end
     
+    function reinitialize(this)
+      %reinitialize Re-initializes the network's weights.
+      for l = 1:this.depth
+        this.layers{l}.reinitialize();
+      end
+    end
+    
   end
 end
 
