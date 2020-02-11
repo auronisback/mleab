@@ -257,7 +257,7 @@ classdef FcConvEquivLayer < ann.layers.Layer
     function reinitialize(this)
       %reinitialize Re-initializes weights and biases for the layer.
       %   Reinitializes all parameters of the hidden FC layer.
-      this.fcLayer.initializeWeightsAndBiases();
+      this.fcLayer.reinitialize();
     end
     
     function s = toString(this)

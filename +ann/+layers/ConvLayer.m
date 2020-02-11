@@ -219,7 +219,7 @@ classdef ConvLayer < ann.layers.Layer
       %   - deltaW: delta values for weights
       %   - deltaB: delta values for biases
       this.F = this.F + deltaW;
-      this.b = this.b + deltaB;
+      this.b = this.b + deltaB.';
     end
     
     function reinitialize(this)
