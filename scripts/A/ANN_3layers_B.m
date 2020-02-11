@@ -1,11 +1,11 @@
 
 %INIT VARIABLES
-TRAIN_NUM = 2000;
-TEST_NUM = 100;
-BATCH_SIZE = 1600;
+TRAIN_NUM = 5000;
+TEST_NUM = 1000;
 VALIDATION_SPLIT = 0.2;
 ETA = .01;
-EPOCHS = 50;
+EPOCHS = 500;
+BATCH_SIZE = TRAIN_NUM * (1 - VALIDATION_SPLIT);  % Full-batch
 
 fprintf('Creating MNIST dataset with %d training samples and %d test samples...\n', ...
   TRAIN_NUM, TEST_NUM);
@@ -23,7 +23,7 @@ fprintf('Creating a neural network with 2 hidden layer:\n');
 net = ann.NeuralNetwork({...
   ann.layers.FcLayer(ds.inputShape, 200, ann.activations.Sigmoid), ...
   ann.layers.FcLayer(200, 100, ann.activations.Sigmoid), ...
-  ann.layers.FcLayer(100, ds.labelShape, ann.activations.Softmax)
+  ann.layers.FcLayer(50, ds.labelShape, ann.activations.Softmax)
 }, errorFun);
 net.print();
 
