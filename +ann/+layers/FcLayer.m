@@ -114,9 +114,8 @@ classdef FcLayer < ann.layers.Layer
       
       % Calculating derivatives w.r.t. activation
       if isa(errorFun, 'ann.errors.CrossEntropy') && ...
-          (isa(this.activation, 'ann.activations.Sigmoid') || ...
-           isa(this.activation, 'ann.activations.Softmax'))
-         % Softmax or sigmoid layer with cross-entropy
+          (isa(this.activation, 'ann.activations.Softmax'))
+         % Softmax layer with cross-entropy
         dA = this.Z - T;
       else
         % General calculation of derivative w.r.t. activation
