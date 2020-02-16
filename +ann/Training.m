@@ -180,12 +180,21 @@ classdef Training < handle
       % Evaluating error and accuracy on training set
       tY = network.predict(tX);
       trainError = network.errorFun.eval(tY, tT) ./ size(tX, 1);
-      trainAcc = this.evalAccuracy(tY, tT);
+      % Calculating accuracy if two or less dimensions in labels
+      if ismatrix(tT)
+        trainAcc = this.evalAccuracy(tY, tT);
+      else
+        trainAcc = 0;
+      end
       % Evaluating error and accuracy on validation, if not empty
       if ~isempty(vX)
         vY = network.predict(vX);
         valError = network.errorFun.eval(vY, vT) ./ size(vX, 1);
-        valAcc = this.evalAccuracy(vY, vT);
+        if ismatrix(tT)
+          valAcc = this.evalAccuracy(vY, vT);
+        else
+          valAcc = 0;
+        end
       else
         % Validation set empty: setting error to 0
         valError = 0;
@@ -208,8 +217,7 @@ classdef Training < handle
     function [X, T] = getBatch(this, X, T, b)
       %getBatchs Gets the b-th batch of samples and labels from training 
       %set.
-      Xshape = size(X);  % Caching input's size
-      Xshape = Xshape(2:end);  % Extracting shape from size
+      
       % Calculating batch starting and ending point
       from = (b - 1) * this.batchSize + 1;
       to = b * this.batchSize;
@@ -218,8 +226,8 @@ classdef Training < handle
         to = from + mod(size(X, 1), this.batchSize) - 1;
       end
       % Returning the batch, reshaping samples to their size
-      X = reshape(X(from:to, :), [to - from + 1, Xshape]);
-      T = T(from:to, :);
+      X = X(from:to, :, :, :);
+      T = T(from:to, :, :, :);
     end
     
     function acc = evalAccuracy(~, Y, T)
@@ -227,7 +235,7 @@ classdef Training < handle
       %   Evaluates the accuracy of the network, both for numerical labels
       %   and for categorical labels.
       if(size(Y, 2) == 1)  % Numerical labels
-        acc = sum(round(Y) == T);  % # of right values...
+        acc = sum(round(Y) == T, 'all');  % # of right values...
       else  % Categorical labels
         [~, Yout] = max(Y, [], 2);
         [~, Tout] = max(T, [], 2);

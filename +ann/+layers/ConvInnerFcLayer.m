@@ -1,5 +1,5 @@
-classdef FcConvEquivLayer < ann.layers.Layer
-  %FCCONVEQUIVLAYER Fully-connected layer equivalent to a convolutional one
+classdef ConvInnerFcLayer < ann.layers.Layer
+  %CONVINNERFCLAYER Fully-connected layer equivalent to a convolutional one
   %   Implements a Fully-Connected layer which is equivalen to a
   %   convolutional layer. The implementation is faster because
   %   computations are done using simple optimized matrix multiplications
@@ -16,9 +16,9 @@ classdef FcConvEquivLayer < ann.layers.Layer
   end
   
   methods
-    function this = FcConvEquivLayer(inputShape, filterNum, filterShape, ...
+    function this = ConvInnerFcLayer(inputShape, filterNum, filterShape, ...
         activation, stride, padding)
-      %FcConvEquivLayer Construct an instance of this class
+      %ConvInnerFcLayer Construct an instance of this class
       %   Creates a fully-connected layer which performs 2D convolutions
       %   using matrix multiplications.
       % Inputs:
@@ -309,7 +309,7 @@ classdef FcConvEquivLayer < ann.layers.Layer
           case 'same'
             % Same padding allowed only for odd filters
             assert(all(mod(this.filterShape(1:2), 2) == 1), ...
-              'FcConvEquivLayer:samePaddingEvenFilter', ...
+              'ConvInnerFcLayer:samePaddingEvenFilter', ...
               '"same" padding allowed only for odd filters');
             this.padding = ceil(((this.inputShape(1:2) - 1) .* this.stride ...
               + this.filterShape(1:2) - this.inputShape(1:2))/2);

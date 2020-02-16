@@ -1,11 +1,11 @@
 inputShape = [14, 14];
 numFilters = 96;
 filterShape = [4, 4];
-stride = [5, 5];
+stride = [2, 2];
 padding = [1, 1];
 N = 128;
 
-fcConvL = ann.layers.FcConvLayer(inputShape, numFilters, filterShape, ...
+fcConvL = ann.layers.ConvInnerFcLayer(inputShape, numFilters, filterShape, ...
   ann.activations.Relu(), stride, padding);
 convL = ann.layers.ConvLayer(inputShape, numFilters, filterShape, ...
   ann.activations.Relu(), stride, padding);

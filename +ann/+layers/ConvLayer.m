@@ -349,6 +349,11 @@ classdef ConvLayer < ann.layers.Layer
       % Unpadding dX
       dX = dX(:, 1+pH:end-pH, 1+pW:end-pW, :);
     end
+  end
+  
+  methods(Access = protected)
+    % Defining convolve method as protected, so subclasses can override it
+    % in order to calculate convolutions in different ways.
     
     function H = convolve(~, X, F, stride)
       %convolve Convolves a 4D tensor with a 4D filter on 2nd to 4th
@@ -393,7 +398,6 @@ classdef ConvLayer < ann.layers.Layer
         end
       end
     end
-    
   end
   
   methods(Static)

@@ -15,7 +15,7 @@ classdef SsError < ann.errors.ErrorFunction
       %   - E: evaluation of SoS error function between Y and T
       E = T - Y;
       E = E .* E;
-      E = .5 * sum(E);
+      E = .5 * sum(E, 'all');
     end
     
     function dE = derive(~, Y, T)

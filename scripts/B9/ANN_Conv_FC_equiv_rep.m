@@ -9,10 +9,9 @@ NUM_REPETITIONS = 10;
 % Training and dataset parameters
 TRAIN_NUM = 2500;
 TEST_NUM = 500;
-BATCH_SIZE = 256;
 VALIDATION_SPLIT = 0.2;
-ETA = 0.01;
-EPOCHS = 100;
+BATCH_SIZE = TRAIN_NUM * (1 - VALIDATION_SPLIT);
+EPOCHS = 50;
 
 fprintf('Creating MNIST dataset with %d training samples and %d test samples...\n', ...
   TRAIN_NUM, TEST_NUM);
@@ -23,15 +22,15 @@ ds.shuffle();
 ds.toCategoricalLabels();
 
 errorFun = ann.errors.CrossEntropy();
-optimizer = ann.optimizers.Sgd(ETA);
+optimizer = ann.optimizers.RProp(.5, 1.2, .00125);
 
 nF = 64;
-fShape = [4, 4];
+fShape = [3, 3];
 padding = [0, 0];
 stride = [1, 1];
 convL = ann.layers.ConvLayer(ds.inputShape, nF, fShape, ...
   ann.activations.Relu(), stride, padding);
-fcL = ann.layers.FcConvEquivLayer(ds.inputShape, nF, fShape, ...
+fcL = ann.layers.ConvInnerFcLayer(ds.inputShape, nF, fShape, ...
   ann.activations.Relu(), stride, padding);
 
 % Creating Convolutional and FC equivalent with same parameters
