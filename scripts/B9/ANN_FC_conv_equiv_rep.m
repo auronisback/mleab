@@ -30,7 +30,7 @@ padding = [0, 0];
 stride = [1, 1];
 convL = ann.layers.ConvLayer(ds.inputShape, nF, fShape, ...
   ann.activations.Relu(), stride, padding);
-fcL = ann.layers.ConvInnerFcLayer(ds.inputShape, nF, fShape, ...
+fcL = ann.layers.FcConvLayer(ds.inputShape, nF, fShape, ...
   ann.activations.Relu(), stride, padding);
 
 % Creating Convolutional and FC equivalent with same parameters
@@ -54,8 +54,8 @@ fprintf(' - bacth size: %d\n', BATCH_SIZE);
 fprintf(' - validation split factor: %.3f\n', VALIDATION_SPLIT);
 fprintf('Training for %d epochs:\n', EPOCHS);
 training = ann.Training(optimizer, BATCH_SIZE, VALIDATION_SPLIT);
-repeatTraining(convNet, ds, training, EPOCHS, NUM_REPETITIONS, ...
-  'experiments/B9/Conv_64.xls');
+% repeatTraining(convNet, ds, training, EPOCHS, NUM_REPETITIONS, ...
+%   'experiments/B9/Conv_64_with_eq.xls');
 
 % Training of FC equiv network
 fprintf('Training Fully-Connected Equivalent Network:\n');
@@ -67,4 +67,4 @@ fprintf(' - validation split factor: %.3f\n', VALIDATION_SPLIT);
 fprintf('Training for %d epochs:\n', EPOCHS);
 training = ann.Training(optimizer, BATCH_SIZE, VALIDATION_SPLIT);
 repeatTraining(fcNet, ds, training, EPOCHS, NUM_REPETITIONS, ...
-  'experiments/B9/FC_Conv_64.xls');
+  'experiments/B9/FC_Conv_64_with_eq.xls');
