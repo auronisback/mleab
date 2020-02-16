@@ -54,8 +54,8 @@ fprintf(' - bacth size: %d\n', BATCH_SIZE);
 fprintf(' - validation split factor: %.3f\n', VALIDATION_SPLIT);
 fprintf('Training for %d epochs:\n', EPOCHS);
 training = ann.Training(optimizer, BATCH_SIZE, VALIDATION_SPLIT);
-% repeatTraining(convNet, ds, training, EPOCHS, NUM_REPETITIONS, ...
-%   'experiments/B9/Conv_64_with_eq.xls');
+repeatTraining(convNet, ds, training, EPOCHS, NUM_REPETITIONS, ...
+  'experiments/B9/Conv_64_with_eq.xls');
 
 % Training of FC equiv network
 fprintf('Training Fully-Connected Equivalent Network:\n');
@@ -65,6 +65,5 @@ fprintf(' - optimizer: %s\n', optimizer.toString());
 fprintf(' - bacth size: %d\n', BATCH_SIZE);
 fprintf(' - validation split factor: %.3f\n', VALIDATION_SPLIT);
 fprintf('Training for %d epochs:\n', EPOCHS);
-training = ann.Training(optimizer, BATCH_SIZE, VALIDATION_SPLIT);
 repeatTraining(fcNet, ds, training, EPOCHS, NUM_REPETITIONS, ...
   'experiments/B9/FC_Conv_64_with_eq.xls');
