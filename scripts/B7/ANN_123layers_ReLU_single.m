@@ -4,16 +4,16 @@
 % training and validation loss and accuracy.
 
 % Layers hyperparameters
-FIRST_NODENUM = 300;  % Number of nodes in the first layer
-SECOND_NODENUM = 150;  % Number of nodes in the second layer
-THIRD_NODENUM = 75;  % Number of nodes in the third layer
+FIRST_NODENUM = 800;  % Number of nodes in the first layer
+SECOND_NODENUM = 400;  % Number of nodes in the second layer
+THIRD_NODENUM = 200;  % Number of nodes in the third layer
 
 % Dataset's number of samples
 NUM_TRAINING = 5000;
 NUM_TEST = 1000;
 
 % Training hyper-parameters
-EPOCHS = 100;
+EPOCHS = 200;
 ETA_PLUS = 1.2;
 ETA_MINUS = 0.5;
 DELTA_ZERO = 0.0125;
