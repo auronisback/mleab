@@ -13,3 +13,5 @@ It contains the following packages:
 - mnist: provides a factory class used to load _MNIST_ dataset of handwritten digits.
 
 In _script_ folder are placed scripts used to repeat experiments realized by authors and commented in the report. In _test_ folder there are some test scripts used to ensure layers were correctly implemented.
+
+The project was developed by Francesco Altiero and Giuseppe Sannino, using Matlab v2019b.
