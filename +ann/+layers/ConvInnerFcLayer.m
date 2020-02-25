@@ -67,7 +67,7 @@ classdef ConvInnerFcLayer < ann.layers.Layer
       this.initializeOutputShape();
       % Initializing inner FC layer
       this.initializeFcLayer();
-      this.name = 'Fc-Conv-Equiv';
+      this.name = 'Conv-Inner-Fc';
     end
     
     function [W, b] = getParameters(this)

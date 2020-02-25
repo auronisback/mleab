@@ -26,7 +26,9 @@ padding = [0, 0];
 stride = [1, 1];
 convL = ann.layers.ConvLayer(ds.inputShape, nF, fShape, ...
   ann.activations.Relu(), stride, padding);
-fcL = ann.layers.FcConvLayer(ds.inputShape, nF, fShape, ...
+fcConvL = ann.layers.FcConvLayer(ds.inputShape, nF, fShape, ...
+  ann.activations.Relu(), stride, padding);
+fcInnerL = ann.layers.ConvInnerFcLayer(ds.inputShape, nF, fShape, ...
   ann.activations.Relu(), stride, padding);
 
 % Creating Convolutional and FC equivalent with same parameters
@@ -35,15 +37,21 @@ convNet = ann.NeuralNetwork({convL, ...
   ann.layers.FcLayer(convL.outputShape, 200, ann.activations.Sigmoid), ...
   ann.layers.FcLayer(200, ds.labelShape, ann.activations.Softmax)
 }, errorFun);
-fcNet = ann.NeuralNetwork({fcL, ...
-  ann.layers.FlattenLayer(fcL.outputShape), ...
-  ann.layers.FcLayer(fcL.outputShape, 200, ann.activations.Sigmoid), ...
+fcConvNet = ann.NeuralNetwork({fcConvL, ...
+  ann.layers.FlattenLayer(convL.outputShape), ...
+  ann.layers.FcLayer(convL.outputShape, 200, ann.activations.Sigmoid), ...
+  ann.layers.FcLayer(200, ds.labelShape, ann.activations.Softmax)
+}, errorFun);
+fcInnerNet = ann.NeuralNetwork({fcInnerL, ...
+  ann.layers.FlattenLayer(fcInnerL.outputShape), ...
+  ann.layers.FcLayer(fcInnerL.outputShape, 200, ann.activations.Sigmoid), ...
   ann.layers.FcLayer(200, ds.labelShape, ann.activations.Softmax)
 }, errorFun);
 
 % Equalizing both network's parameters
 [W, b] = convNet.getParameters();
-fcNet.setParameters(W, b);
+fcConvNet.setParameters(W, b);
+fcInnerNet.setParameters(W, b);
 
 % Training of Conv network
 fprintf('Training Convolutional Network:\n');
@@ -60,17 +68,32 @@ fprintf('Test error: %.2f\nTest Accuracy: %.2f\n', ...
   testErr, testAcc * 100);
 plotErrors(errors, bestEpoch, 'Convolutional Training');
 
-% Training of FC equiv network
+% Training of Conv network
 fprintf('Training Fully-Connected Equivalent Network:\n');
-fcNet.print();
+fcConvNet.print();
 fprintf(' - error: %s\n', errorFun.toString());
 fprintf(' - optimizer: %s\n', optimizer.toString());
 fprintf(' - bacth size: %d\n', BATCH_SIZE);
 fprintf(' - validation split factor: %.3f\n', VALIDATION_SPLIT);
 fprintf('Training for %d epochs:\n', EPOCHS);
 training = ann.Training(optimizer, BATCH_SIZE, VALIDATION_SPLIT);
-[errors, bestEpoch] = training.train(EPOCHS, fcNet, ds);
-[testErr, testAcc] = training.evaluateOnTestSet(fcNet, ds);
+[errors, bestEpoch] = training.train(EPOCHS, fcConvNet, ds);
+[testErr, testAcc] = training.evaluateOnTestSet(fcConvNet, ds);
 fprintf('Test error: %.2f\nTest Accuracy: %.2f\n', ...
   testErr, testAcc * 100);
-plotErrors(errors, bestEpoch, 'FC-equivalent Training');
+plotErrors(errors, bestEpoch, 'FC-Convolutional Training');
+
+% Training of FC equiv network with inner layer
+fprintf('Training Fully-Connected Equivalent Network (with inner FC):\n');
+fcInnerNet.print();
+fprintf(' - error: %s\n', errorFun.toString());
+fprintf(' - optimizer: %s\n', optimizer.toString());
+fprintf(' - bacth size: %d\n', BATCH_SIZE);
+fprintf(' - validation split factor: %.3f\n', VALIDATION_SPLIT);
+fprintf('Training for %d epochs:\n', EPOCHS);
+training = ann.Training(optimizer, BATCH_SIZE, VALIDATION_SPLIT);
+[errors, bestEpoch] = training.train(EPOCHS, fcInnerNet, ds);
+[testErr, testAcc] = training.evaluateOnTestSet(fcInnerNet, ds);
+fprintf('Test error: %.2f\nTest Accuracy: %.2f\n', ...
+  testErr, testAcc * 100);
+plotErrors(errors, bestEpoch, 'FC-Inner Training');

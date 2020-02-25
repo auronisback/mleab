@@ -5,7 +5,7 @@ classdef FcConvLayer < ann.layers.ConvLayer
   %   fully-connected equivalent approach defined in [Ma et Lu, 2017].
   
   methods
-    function self = FcConvLayer(inputShape, filterNum, filterShape, ...
+    function this = FcConvLayer(inputShape, filterNum, filterShape, ...
         activation, stride, padding)
       %FcConvLayer Construct an instance of this class
       %   Creates an object which performs 2-dimensional convolutions
@@ -37,8 +37,10 @@ classdef FcConvLayer < ann.layers.ConvLayer
       if ~exist('padding', 'var')
         padding = [0, 0];
       end
-      self = self@ann.layers.ConvLayer(inputShape, filterNum, ...
+      this = this@ann.layers.ConvLayer(inputShape, filterNum, ...
         filterShape, activation, stride, padding);
+      % Renaming
+      this.name = 'FcConv';
     end
   end
   
