@@ -55,3 +55,18 @@ fprintf('Checking same dXs: ');
 assert(all(abs(cdX - fcdX) < 1e-10, 'all'), 'ERROR: different dXs');
 fprintf('Ok\n');
 
+% Checking update brings same values
+fprintf('Checking update: ');
+opt = ann.optimizers.Sgd(.1);
+[deltaW, deltaB] = opt.evaluateDeltas({cdW}, {cdb}, 1);
+% Updating parameters in both layer
+convL.updateParameters(deltaW{1}, deltaB{1});
+fcConvL.updateParameters(deltaW{1}, deltaB{1});
+[newConvW, newConvB] = convL.getParameters();
+[newFcConvW, newFcConvB] = fcConvL.getParameters();
+assert(all(abs(newConvW - newFcConvW) < 1e-10, 'all'), ...
+  'ERROR: different weights after update');
+assert(all(abs(newConvB - newFcConvB) < 1e-10, 'all'), ...
+  'ERROR: different biases after update');
+fprintf('Ok\n');
+

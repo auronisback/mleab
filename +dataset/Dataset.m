@@ -84,7 +84,6 @@ classdef Dataset < handle
       perm = randperm(this.getTrainingN()); %Creating a permutation
       %Permutating training images and labels
       
-      % TODO: correct in order to not mess with data - abstract dimensions
       this.trainSamples = this.trainSamples(perm, :, :, :);
       this.trainLabels = this.trainLabels(perm, :, :, :);
     end

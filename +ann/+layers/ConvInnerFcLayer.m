@@ -250,6 +250,7 @@ classdef ConvInnerFcLayer < ann.layers.Layer
       %   - deltaB: delta values for biases
       
       % Reshaping deltas
+      deltaW = permute(deltaW, [1, 3, 2, 4]);
       deltaW = reshape(deltaW, [this.filterNum, prod(this.filterShape)]);
       this.fcLayer.updateParameters(deltaW, deltaB.');
     end
