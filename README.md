@@ -12,6 +12,6 @@ It contains the following packages:
    + optimizers: includes classes which manages the _optimization_ of network's parameters during training, defining rules of update for weights and biases.
 - mnist: provides a factory class used to load _MNIST_ dataset of handwritten digits.
 
-In _script_ folder are placed scripts used to repeat experiments realized by authors and commented in the report. In _test_ folder there are some test scripts used to ensure layers were correctly implemented.
+In _script_ folder are placed scripts used to repeat experiments realized by authors and commented in the report. In _test_ folder there are some test scripts used to ensure layers were correctly implemented. The _experiments_ folder contains .xls file with experiment results, calculating mean and median of loss function, accuracy and elapsed time for network's training.
 
 The project was developed by Francesco Altiero and Giuseppe Sannino, using Matlab v2019b.
