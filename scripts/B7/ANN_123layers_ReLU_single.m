@@ -13,7 +13,7 @@ NUM_TRAINING = 5000;
 NUM_TEST = 1000;
 
 % Training hyper-parameters
-EPOCHS = 200;
+EPOCHS = 100;
 ETA_PLUS = 1.2;
 ETA_MINUS = 0.5;
 DELTA_ZERO = 0.0125;

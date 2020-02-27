@@ -7,16 +7,16 @@
 NUM_REPETITIONS = 10;
 
 % Layers hyperparameters
-FIRST_NODENUM = 300;  % Number of nodes in the first layer
-SECOND_NODENUM = 150;  % Number of nodes in the second layer
-THIRD_NODENUM = 75;  % Number of nodes in the third layer
+FIRST_NODENUM = 200;  % Number of nodes in the first layer
+SECOND_NODENUM = 100;  % Number of nodes in the second layer
+THIRD_NODENUM = 50;  % Number of nodes in the third layer
 
 % Dataset's number of samples
 NUM_TRAINING = 5000;
 NUM_TEST = 1000;
 
 % Training hyper-parameters
-EPOCHS = 500;
+EPOCHS = 100;
 ETA_PLUS = 1.2;
 ETA_MINUS = 0.5;
 DELTA_ZERO = 0.0125;
